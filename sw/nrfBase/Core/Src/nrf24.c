@@ -27,32 +27,52 @@ static struct {
 
 // - private variables for freeRTOS tasks --------------------------------------
 typedef StaticTask_t osStaticThreadDef_t;
+typedef StaticQueue_t osStaticMessageQDef_t;
 typedef StaticTimer_t osStaticTimerDef_t;
 
-/* Definitions for rf_com */
-osThreadId_t rf_comHandle;
-uint32_t rf_com_buffer[ 128 ];
-osStaticThreadDef_t rf_com_ctrl_block;
-const osThreadAttr_t rf_com_attributes = {
-  .name = "rf_com",
-  .cb_mem = &rf_com_ctrl_block,
-  .cb_size = sizeof(rf_com_ctrl_block),
-  .stack_mem = &rf_com_buffer[0],
-  .stack_size = sizeof(rf_com_buffer),
+
+osThreadId_t nrf24_event_task_handle = NULL;
+uint32_t nrf24_event_task_buffer[ 128 ];
+osStaticThreadDef_t nrf24_event_task_ctrl_block;
+const osThreadAttr_t nrf24_event_tas_attributes = {
+  .name = "nrf24_event_task",
+  .cb_mem = &nrf24_event_task_ctrl_block,
+  .cb_size = sizeof(nrf24_event_task_ctrl_block),
+  .stack_mem = &nrf24_event_task_buffer[0],
+  .stack_size = sizeof(nrf24_event_task_buffer),
   .priority = (osPriority_t) osPriorityLow,
 };
-/* Definitions for rf_timer */
-osTimerId_t rf_timerHandle;
-osStaticTimerDef_t rf_timer_ctrl_block;
-const osTimerAttr_t rf_timer_attributes = {
-  .name = "rf_timer",
-  .cb_mem = &rf_timer_ctrl_block,
-  .cb_size = sizeof(rf_timer_ctrl_block),
+
+osMessageQueueId_t nrf24_event_queue_handle = NULL;
+uint8_t nrf24_event_queue_buffer[ 16 * sizeof( uint16_t ) ];
+osStaticMessageQDef_t nrf24_event_queue_ctrl_block;
+const osMessageQueueAttr_t nrf24_event_queue_attributes = {
+  .name = "nrf24_event_queue",
+  .cb_mem = &nrf24_event_queue_ctrl_block,
+  .cb_size = sizeof(nrf24_event_queue_ctrl_block),
+  .mq_mem = &nrf24_event_queue_buffer,
+  .mq_size = sizeof(nrf24_event_queue_buffer)
 };
 
-void rf_com_task(void *argument);
-void rf_timer_cb(void *argument);
-// - private app functions -----------------------------------------------------
+osTimerId_t nrf24_timer_handle = NULL;
+osStaticTimerDef_t nrf24_timer_ctrl_block;
+const osTimerAttr_t nrf24_timer_attributes = {
+  .name = "nrf24_timer",
+  .cb_mem = &nrf24_timer_ctrl_block,
+  .cb_size = sizeof(nrf24_timer_ctrl_block),
+};
+
+static void nrf24_event_task_cb(void *argument);
+static void nrf24_timer_cb(void *argument);
+// - private app functions for freeRTOS ----------------------------------------
+static uint16_t nrf24_timer_event = 0;
+
+static inline void nrf24_wait_event(uint32_t ms, uint16_t event) {
+	if(ms) {
+		nrf24_timer_event = event;
+		osTimerStart(nrf24_timer_handle, pdMS_TO_TICKS(ms));
+	}
+}
 
 // - private variables ---------------------------------------------------------
 volatile uint16_t nrf24_global_events;
@@ -132,27 +152,25 @@ void nrf24_Init(void) {
 	nrf24_ctrl.status = nRF24_STATUS_OFF;
 	nrf24_ctrl.setup.retries = 0x25;
 
-	/* creation of rf_timer */
-	rf_timerHandle = osTimerNew(rf_timer_cb, osTimerOnce, NULL, &rf_timer_attributes);
-	/* creation of rf_com */
-	rf_comHandle = osThreadNew(rf_com_task, NULL, &rf_com_attributes);
-
 	nrf24_ctrl.rf_button.state = 0;
 	nrf24_Save_Last(nRF24_JOB_NONE, nRF24_RET_PROCESSING);
 	nrf24_clear_all_jobs();
 
 	nrf24_cmd_Init();
 	nrf24_hal_Init();
+
+	if(nrf24_timer_handle  == NULL) {
+		nrf24_timer_handle = osTimerNew(nrf24_timer_cb, osTimerOnce, NULL, &nrf24_timer_attributes);
+	}
+	if(nrf24_event_queue_handle  == NULL) {
+		nrf24_event_queue_handle = osMessageQueueNew (16, sizeof(uint16_t), &nrf24_event_queue_attributes);
+	}
+	if(nrf24_event_task_handle  == NULL) {
+		nrf24_event_task_handle = osThreadNew(nrf24_event_task_cb, NULL, &nrf24_event_tas_attributes);
+	}
 }
 
 void nrf24_Load_Stored_Settings(void) {
-	/*_U8 n;
-	for(n = 0; n < RF24_ADDR_SIZE; n++)
-		nrf24_ctrl.setup.rxtx_addr[n] = USR7_NRF24_RXTX_ADDR[n];
-	nrf24_ctrl.setup.rf_ch = USR7_NRF24_RF_CH;
-	nrf24_ctrl.setup.pipe = USR7_NRF24_PIPE;
-	*/
-//#error load default values
 	return;
 }
 
@@ -168,7 +186,7 @@ void nrf24_Open(void) {
 	nrf24_add_job(nRF24_JOB_OPEN);
 	nrf24_hal_Open();
 	// wait 100 ms at least
-	//TA1_nRF24_Wait_Event(cTA_nRF24_WAIT_100ms, nRF24_EV_DO_START);
+	nrf24_wait_event(100, nRF24_EV_DO_START);
 }
 
 void nrf24_Close(void) {
@@ -225,7 +243,7 @@ uint8_t  nrf24_Set_RXTX_Addr(uint8_t *addr, uint8_t size) {
 }
 
 // - Scan for teaching address -------------------------------------------------
-#define	SCAN_NB_TRIES	4	// 6: whole cycle should take 12 s, receiver is ready for 20 s 
+#define	SCAN_NB_TRIES	4	// 6: whole cycle should take 12 s, receiver is ready for 20 s
 static void nrf24_Scan_Send(void) {
 	nrf24_cmd_Write_Config(0x0E);
 	nrf24_cmd_Write_Setup_Retr(nrf24_ctrl.setup.retries);
@@ -234,7 +252,7 @@ static void nrf24_Scan_Send(void) {
 	//nrf24_cmd_Write_TX_Payload(dp2_tx_packet, len);
 	nrf24_hal_IRQ_IE_En();
 	nrf24_hal_CE_Pulse();
-	
+
 	//TA1_nRF24_Wait_Event(cTA_nRF24_WAIT_10ms, nRF24_EV_GUARD_TIMEOUT);
 }
 
@@ -246,7 +264,7 @@ static void nrf24_Scan_Set_Parameters(uint8_t ch, uint8_t a0, uint8_t a1, uint8_
 	nrf24_ctrl.scan.addr[2] = a2;
 	nrf24_ctrl.scan.addr[3] = a3;
 	nrf24_ctrl.scan.addr[4] = a4;
-	
+
 	nrf24_cmd_Write_RF_CH(nrf24_ctrl.scan.channel);
 	memcpy(addr, nrf24_ctrl.scan.addr, RF24_ADDR_SIZE);
 	nrf24_cmd_Write_RX_Addr_P0(addr);
@@ -259,7 +277,7 @@ static uint8_t  nrf24_Scan_Next(void) {
 		nrf24_ctrl.nb_tries--;
 		return 1;// proceed
 	}
-	
+
 	nrf24_ctrl.nb_tries = SCAN_NB_TRIES;
 	if(nrf24_ctrl.scan.channel < 80) {
 		nrf24_ctrl.scan.channel++;
@@ -281,14 +299,14 @@ static uint8_t  nrf24_Scan_Next(void) {
 void nrf24_Scan(void) {
 	// prepare vars
 	// call nrf24_Scan_Next() right after nRF24_EV_DO_START, to set channel + address correctly
-	// because nrf24_Open() was not called yet, nRF does not run yet  
+	// because nrf24_Open() was not called yet, nRF does not run yet
 	nrf24_ctrl.nb_tries = 0;
 	nrf24_ctrl.scan.step = 0;
 	nrf24_ctrl.scan.channel = 200; // should be < 80, so all params will be set correctly @ 1st call
 	// found ack using these settings: nrf24_Scan_Set_Parameters(9, 0x94, 0x69, 0x96, 0x69, 0x96);
-	
+
 	nrf24_Open();
-	
+
 	nrf24_add_job(nRF24_JOB_SCAN);
 	if(nrf24_ctrl.status & nRF24_STATUS_OPEN) {
 		// already open, continue with nRF24_EV_DO_START
@@ -307,23 +325,23 @@ static void nrf24_RFButton_Send(uint8_t key) {
 	nrf24_cmd_Write_TX_Payload(dp2_tx_packet, len);
 	nrf24_hal_IRQ_IE_En();
 	nrf24_hal_CE_Pulse();
-	
+
 	//TA1_nRF24_Wait_Event(nrf24_ctrl.rf_button.guard_timing, nRF24_EV_GUARD_TIMEOUT);
 }
 
 void nrf24_RFButton(uint8_t key, uint16_t nb_tries) {
 	nrf24_Open();
-	
+
 	if((nrf24_ctrl.status & nRF24_STATUS_RECEIVER_DETECTED) == 0) {
-		// 1st call, normal operation	
+		// 1st call, normal operation
 		nrf24_ctrl.rf_button.key_code = key;	// [1]
 		nrf24_ctrl.rf_button.nb_tries = nb_tries + 8; // send additonal button released
 		nrf24_ctrl.rf_button.guard_timing = 0;//cTA_nRF24_WAIT_10ms;
-		
+
 		// detect receiver first
 		nrf24_ctrl.nb_tries = nRF24_NB_TRIES_TO_DETECT;
 		nrf24_ctrl.rf_button.state = RB_BUTTON_STATE_RECEIVER_DETECTED_SEND_KEYCODE_0;
-	
+
 		nrf24_add_job(nRF24_JOB_RFBUTTON);
 		if(nrf24_ctrl.status & nRF24_STATUS_OPEN) {
 			// already open, continue with nRF24_EV_DO_START
@@ -335,7 +353,7 @@ void nrf24_RFButton(uint8_t key, uint16_t nb_tries) {
 		nrf24_ctrl.rf_button.key_code = key;	// [1]
 		nrf24_ctrl.rf_button.nb_tries = nb_tries + 8; // send additonal button released
 
-		// act as when receiver was detected and set parameters accordingly		
+		// act as when receiver was detected and set parameters accordingly
 		// receiver detected, so set new parameters for transmission
 		nrf24_ctrl.nb_tries = nrf24_ctrl.rf_button.nb_tries + 4;
 		// send key_code 0 so button is released first
@@ -344,187 +362,202 @@ void nrf24_RFButton(uint8_t key, uint16_t nb_tries) {
 	}
 }
 
-// - ProcessEvents -------------------------------------------------------------
-uint8_t nrf24_ProcessEvents(uint16_t events) {
+
+static void nrf24_timer_cb(void *argument) {
+	if(nrf24_timer_event) {
+		osMessageQueuePut(nrf24_event_queue_handle, &nrf24_timer_event, 0, osWaitForever);
+		nrf24_timer_event = 0;
+	}
+}
+
+static void nrf24_event_task_cb(void *argument) {
+	uint16_t event = 0;
 	uint8_t status, value, pipe;
 	uint8_t addr_copy[RF24_ADDR_SIZE];
-	
-	switch(nrf24_current_job()) {
-		case nRF24_JOB_OPEN:
-			if(events & nRF24_EV_DO_START) {
-				status = nrf24_cmd_Write_Config(0x00);
-				nRF24_cmd_Clear_Status();
-				value = 0x73;
-				status = nrf24_cmd_Transmit(0x50, &value, 1);
-				
-				status = nrf24_cmd_Write_Features(0x07);
-				status = nrf24_cmd_Write_DYNPD(0x3F);
-				// unn�tig? 
-				//status = nrf24_cmd_Write_RX_PW_P4(0x20);
-	
-				memcpy(addr_copy, nrf24_ctrl.setup.rxtx_addr, RF24_ADDR_SIZE);	// create copy, because nrf24_cmd_Write_TX_Addr() will overwrite addr
-				addr_copy[0] += nrf24_ctrl.setup.pipe;
-				status = nrf24_cmd_Write_TX_Addr(addr_copy);
-				memcpy(addr_copy, nrf24_ctrl.setup.rxtx_addr, RF24_ADDR_SIZE);	// create copy, because nrf24_cmd_Write_RX_Addr_Px() will overwrite addr
-				addr_copy[0] += nrf24_ctrl.setup.pipe;
-				status = nrf24_cmd_Write_RX_Addr_P0(addr_copy);	
-				
-				status = nrf24_cmd_Write_EN_AA(0x3F);
-				status = nrf24_cmd_Write_EN_RXADDR(0x3F);
-				status = nrf24_cmd_Write_RF_CH(nrf24_ctrl.setup.rf_ch);
-				status = nrf24_cmd_Write_Setup_Retr(nrf24_ctrl.setup.retries);
-				status = nrf24_cmd_Write_RF_Setup(0x07);
-				status = nrf24_cmd_Write_Config(0x0E);
-				status = nrf24_cmd_Flush_TX();
-				
-				//TA1_nRF24_Wait_Event(cTA_nRF24_WAIT_4_5ms, nRF24_EV_GUARD_TIMEOUT);
-			}
-			if(events & nRF24_EV_GUARD_TIMEOUT) {
-				nrf24_ctrl.status |= nRF24_STATUS_OPEN;
-				status = nrf24_cmd_Get_Status();
-				if(nrf24_get_next_job() == nRF24_JOB_NONE) {
-					// stop here, no new job, so job done
-					nrf24_Save_Last(nRF24_JOB_OPEN, nRF24_RET_DONE_OK);
-					nrf24_Close();
-					return nRF24_RET_DONE_OK;
-				}
-				// start next job with nRF24_EV_DO_START
-				//TA1_nRF24_Wait_Event(cTA_nRF24_WAIT_500us, nRF24_EV_DO_START);
-			}
-			break;
-			
-		// ---------------------------------------------------------------------
-		
-		case nRF24_JOB_SCAN:
-			if(events & nRF24_EV_DO_START) {
-				nrf24_Scan_Next();
-				nrf24_Scan_Send();
-			}
-			if(events & (nRF24_EV_TX_MAX_RETRY | nRF24_EV_GUARD_TIMEOUT)) {
-				nrf24_hal_CE_Low();
-				nrf24_hal_IRQ_IE_Dis();
-				
-				if(nrf24_Scan_Next() == 0) {
-					// error, could not find receiver while scanning
-					nrf24_get_next_job();
-					nrf24_Close();
-					nrf24_Save_Last(nRF24_JOB_SCAN, nRF24_RET_ERROR);
-					return nRF24_RET_ERROR;
-				}				
-				nrf24_Scan_Send();
-			}
-			if(events & nRF24_EV_RX_DONE) {
-				status = nrf24_cmd_Read_RX_Payload(dp2_rx_packet, cMAX_PAYLOAD_SIZE);
-				status = nrf24_cmd_Flush_RX();
 
-				if(dp2_rx_packet[2] == 0x01) {
-					// this is a ModukeID Packet, OK
-					//dp2_Get_ModulID_From_Rx_Packet(dp2_rx_packet, &pipe, addr_copy);
-					// also set pipe + address for communication
-					// stay at this channel
-					nrf24_Set_Channel(nrf24_ctrl.scan.channel);
-					nrf24_Set_Pipe(pipe);
-					nrf24_Set_RXTX_Addr(addr_copy, RF24_ADDR_SIZE);
-					nrf24_Store_Settings_In_Flash();
-					
-					nrf24_get_next_job();
-					nrf24_Close();
-					nrf24_Save_Last(nRF24_JOB_SCAN, nRF24_RET_DONE_OK);
-					return nRF24_RET_DONE_OK;
-				}
-			}
-			break;
-			
-		// ---------------------------------------------------------------------
-		
-		case nRF24_JOB_RFBUTTON:
-			if(events & nRF24_EV_DO_START) {
-				nrf24_RFButton_Send(0);
-			}
-			if(events & (nRF24_EV_TX_MAX_RETRY | nRF24_EV_GUARD_TIMEOUT)) {
-				nrf24_hal_CE_Low();
-				nrf24_hal_IRQ_IE_Dis();
-				
+	while(1) {
+		if(osMessageQueueGet(nrf24_event_queue_handle, &event, 0, osWaitForever) == osOK) {
+			switch(nrf24_current_job()) {
+				case nRF24_JOB_OPEN:
+					if(event == nRF24_EV_DO_START) {
+						status = nrf24_cmd_Write_Config(0x00);
+						nRF24_cmd_Clear_Status();
+						value = 0x73;
+						status = nrf24_cmd_Transmit(0x50, &value, 1);
 
-				if((nrf24_ctrl.status & nRF24_STATUS_RECEIVER_DETECTED) == 0) {
-					// no receiver detected
-					nrf24_ctrl.nb_tries--;
-					if(nrf24_ctrl.nb_tries == 0) {
-						// done, error, could not detect receiver
-						
-						nrf24_get_next_job();
-						nrf24_Close();
-						nrf24_Save_Last(nRF24_JOB_RFBUTTON, nRF24_RET_ERROR);
-						return nRF24_RET_ERROR;
-					}
-				}
-				else {
-					nrf24_ctrl.nb_tries--;
-					if(nrf24_ctrl.nb_tries == 0) {
-						// done, OK, all packets sent
-						
-						nrf24_get_next_job();
-						nrf24_Close();
-						nrf24_Save_Last(nRF24_JOB_RFBUTTON, nRF24_RET_DONE_OK);
-						return nRF24_RET_DONE_OK; 
-					}
-					else if(nrf24_ctrl.nb_tries == 4) {
-						// send key_code 0 so button is released 
-						nrf24_ctrl.rf_button.state = RB_BUTTON_STATE_RECEIVER_DETECTED_SEND_KEYCODE_0;
-					}
-					else if(nrf24_ctrl.nb_tries == nrf24_ctrl.rf_button.nb_tries) {
-						// send given key_code so button is pressed now
-						nrf24_ctrl.rf_button.state = RB_BUTTON_STATE_RECEIVER_DETECTED_SEND_BUTTON_KEYCODE;
-					}
-				}		
-				if(nrf24_ctrl.rf_button.state == RB_BUTTON_STATE_RECEIVER_DETECTED_SEND_KEYCODE_0)
-					nrf24_RFButton_Send(0);
-				else
-					nrf24_RFButton_Send(nrf24_ctrl.rf_button.key_code);
-			}
-			if(events & nRF24_EV_RX_DONE) {
-				status = nrf24_cmd_Read_RX_Payload(dp2_rx_packet, cMAX_PAYLOAD_SIZE);
-				status = nrf24_cmd_Flush_RX();
+						status = nrf24_cmd_Write_Features(0x07);
+						status = nrf24_cmd_Write_DYNPD(0x3F);
+						// unn�tig?
+						//status = nrf24_cmd_Write_RX_PW_P4(0x20);
 
-				if((nrf24_ctrl.status & nRF24_STATUS_RECEIVER_DETECTED) == 0) {
-					if(dp2_rx_packet[2] == 0x06) {
-						// this is a RF_LED_ON Packet, OK
-						nrf24_ctrl.status |= nRF24_STATUS_RECEIVER_DETECTED;
-						// receiver detected, so set new parameters for transmission
-						nrf24_ctrl.nb_tries = nrf24_ctrl.rf_button.nb_tries + 4;
-						// send key_code 0 so button is released first
-						nrf24_ctrl.rf_button.state = RB_BUTTON_STATE_RECEIVER_DETECTED_SEND_KEYCODE_0;
-						//nrf24_ctrl.rf_button.guard_timing = cTA_nRF24_WAIT_100ms;
+						memcpy(addr_copy, nrf24_ctrl.setup.rxtx_addr, RF24_ADDR_SIZE);	// create copy, because nrf24_cmd_Write_TX_Addr() will overwrite addr
+						addr_copy[0] += nrf24_ctrl.setup.pipe;
+						status = nrf24_cmd_Write_TX_Addr(addr_copy);
+						memcpy(addr_copy, nrf24_ctrl.setup.rxtx_addr, RF24_ADDR_SIZE);	// create copy, because nrf24_cmd_Write_RX_Addr_Px() will overwrite addr
+						addr_copy[0] += nrf24_ctrl.setup.pipe;
+						status = nrf24_cmd_Write_RX_Addr_P0(addr_copy);
+
+						status = nrf24_cmd_Write_EN_AA(0x3F);
+						status = nrf24_cmd_Write_EN_RXADDR(0x3F);
+						status = nrf24_cmd_Write_RF_CH(nrf24_ctrl.setup.rf_ch);
+						status = nrf24_cmd_Write_Setup_Retr(nrf24_ctrl.setup.retries);
+						status = nrf24_cmd_Write_RF_Setup(0x07);
+						status = nrf24_cmd_Write_Config(0x0E);
+						status = nrf24_cmd_Flush_TX();
+
+						nrf24_wait_event(5, nRF24_EV_GUARD_TIMEOUT);
 					}
-				}
+					if(event == nRF24_EV_GUARD_TIMEOUT) {
+						nrf24_ctrl.status |= nRF24_STATUS_OPEN;
+						status = nrf24_cmd_Get_Status();
+						if(nrf24_get_next_job() == nRF24_JOB_NONE) {
+							// stop here, no new job, so job done
+							nrf24_Save_Last(nRF24_JOB_OPEN, nRF24_RET_DONE_OK);
+							nrf24_Close();
+							return nRF24_RET_DONE_OK;
+						}
+						// start next job with nRF24_EV_DO_START
+						nrf24_wait_event(1, nRF24_EV_DO_START);
+					}
+					break;
+
+				// ---------------------------------------------------------------------
+
+				case nRF24_JOB_SCAN:
+					if(event == nRF24_EV_DO_START) {
+						nrf24_Scan_Next();
+						nrf24_Scan_Send();
+					}
+					if((event == nRF24_EV_TX_MAX_RETRY) || (event == nRF24_EV_GUARD_TIMEOUT)) {
+						nrf24_hal_CE_Low();
+						nrf24_hal_IRQ_IE_Dis();
+
+						if(nrf24_Scan_Next() == 0) {
+							// error, could not find receiver while scanning
+							nrf24_get_next_job();
+							nrf24_Close();
+							nrf24_Save_Last(nRF24_JOB_SCAN, nRF24_RET_ERROR);
+							break;//return nRF24_RET_ERROR;
+						}
+						nrf24_Scan_Send();
+					}
+					if(event == nRF24_EV_RX_DONE) {
+						status = nrf24_cmd_Read_RX_Payload(dp2_rx_packet, cMAX_PAYLOAD_SIZE);
+						status = nrf24_cmd_Flush_RX();
+
+						if(dp2_rx_packet[2] == 0x01) {
+							// this is a ModukeID Packet, OK
+							//dp2_Get_ModulID_From_Rx_Packet(dp2_rx_packet, &pipe, addr_copy);
+							// also set pipe + address for communication
+							// stay at this channel
+							nrf24_Set_Channel(nrf24_ctrl.scan.channel);
+							nrf24_Set_Pipe(pipe);
+							nrf24_Set_RXTX_Addr(addr_copy, RF24_ADDR_SIZE);
+							nrf24_Store_Settings_In_Flash();
+
+							nrf24_get_next_job();
+							nrf24_Close();
+							nrf24_Save_Last(nRF24_JOB_SCAN, nRF24_RET_DONE_OK);
+							break;//return nRF24_RET_DONE_OK;
+						}
+					}
+					break;
+
+				// ---------------------------------------------------------------------
+
+				case nRF24_JOB_RFBUTTON:
+					if(event == nRF24_EV_DO_START) {
+						nrf24_RFButton_Send(0);
+					}
+					if((event == nRF24_EV_TX_MAX_RETRY) || (event == nRF24_EV_GUARD_TIMEOUT)) {
+						nrf24_hal_CE_Low();
+						nrf24_hal_IRQ_IE_Dis();
+
+
+						if((nrf24_ctrl.status & nRF24_STATUS_RECEIVER_DETECTED) == 0) {
+							// no receiver detected
+							nrf24_ctrl.nb_tries--;
+							if(nrf24_ctrl.nb_tries == 0) {
+								// done, error, could not detect receiver
+
+								nrf24_get_next_job();
+								nrf24_Close();
+								nrf24_Save_Last(nRF24_JOB_RFBUTTON, nRF24_RET_ERROR);
+								break;//return nRF24_RET_ERROR;
+							}
+						}
+						else {
+							nrf24_ctrl.nb_tries--;
+							if(nrf24_ctrl.nb_tries == 0) {
+								// done, OK, all packets sent
+
+								nrf24_get_next_job();
+								nrf24_Close();
+								nrf24_Save_Last(nRF24_JOB_RFBUTTON, nRF24_RET_DONE_OK);
+								break;//return nRF24_RET_DONE_OK;
+							}
+							else if(nrf24_ctrl.nb_tries == 4) {
+								// send key_code 0 so button is released
+								nrf24_ctrl.rf_button.state = RB_BUTTON_STATE_RECEIVER_DETECTED_SEND_KEYCODE_0;
+							}
+							else if(nrf24_ctrl.nb_tries == nrf24_ctrl.rf_button.nb_tries) {
+								// send given key_code so button is pressed now
+								nrf24_ctrl.rf_button.state = RB_BUTTON_STATE_RECEIVER_DETECTED_SEND_BUTTON_KEYCODE;
+							}
+						}
+						if(nrf24_ctrl.rf_button.state == RB_BUTTON_STATE_RECEIVER_DETECTED_SEND_KEYCODE_0)
+							nrf24_RFButton_Send(0);
+						else
+							nrf24_RFButton_Send(nrf24_ctrl.rf_button.key_code);
+					}
+					if(event == nRF24_EV_RX_DONE) {
+						status = nrf24_cmd_Read_RX_Payload(dp2_rx_packet, cMAX_PAYLOAD_SIZE);
+						status = nrf24_cmd_Flush_RX();
+
+						if((nrf24_ctrl.status & nRF24_STATUS_RECEIVER_DETECTED) == 0) {
+							if(dp2_rx_packet[2] == 0x06) {
+								// this is a RF_LED_ON Packet, OK
+								nrf24_ctrl.status |= nRF24_STATUS_RECEIVER_DETECTED;
+								// receiver detected, so set new parameters for transmission
+								nrf24_ctrl.nb_tries = nrf24_ctrl.rf_button.nb_tries + 4;
+								// send key_code 0 so button is released first
+								nrf24_ctrl.rf_button.state = RB_BUTTON_STATE_RECEIVER_DETECTED_SEND_KEYCODE_0;
+								//nrf24_ctrl.rf_button.guard_timing = cTA_nRF24_WAIT_100ms;
+							}
+						}
+					}
+					break;
+
+				// ---------------------------------------------------------------------
+
+				case nRF24_JOB_NONE:
+				default: ;
 			}
-			break;
-			
-		// ---------------------------------------------------------------------
-		
-		case nRF24_JOB_NONE:
-		default: ;
+			nrf24_ctrl.last.result = nRF24_RET_PROCESSING;
+		}
+		osDelay(1);
 	}
-	nrf24_ctrl.last.result = nRF24_RET_PROCESSING;
-	return nRF24_RET_PROCESSING;
 }
 
 void nrf24_ProcessInterrupt(void) {
+	uint16_t event;
 	uint8_t status, value;
 	nrf24_hal_IRQ_IE_Dis();
 	//TA1_nRF24_Stop_Timeout();
-	
+
 	status = nRF24_cmd_Clear_Status();
 	if(status & RF24_RX_DR) {
 		// data in RX FIFO, maybe ACK + DATA or DATA alone
 		nrf24_hal_CE_Low();
-		nrf24_Send_Event(nRF24_EV_RX_DONE);
+		//nrf24_Send_Event(nRF24_EV_RX_DONE);
+		event = nRF24_EV_RX_DONE;
+		osMessageQueuePut(nrf24_event_queue_handle, &event, 0, osWaitForever);
 	}
 	 else {
 	 	if(nrf24_current_job() == nRF24_JOB_SCAN) {
 			// only ACK, but no DATA
 			if(status & RF24_TX_DS) {
-				// do not use main_loop, becasue it may be too slow 
+				// do not use main_loop, becasue it may be too slow
 				// ack received, start receiving
 				status = nrf24_cmd_Write_Config(0x0F);
 				nrf24_hal_IRQ_IE_En();
@@ -535,33 +568,8 @@ void nrf24_ProcessInterrupt(void) {
 	 	}
 	}
 	if(status & RF24_MAX_RT) {
-		nrf24_Send_Event(nRF24_EV_TX_MAX_RETRY);
+		//nrf24_Send_Event(nRF24_EV_TX_MAX_RETRY);
+		event = nRF24_EV_TX_MAX_RETRY;
+		osMessageQueuePut(nrf24_event_queue_handle, &event, 0, osWaitForever);
 	}
 }
-
-/* USER CODE BEGIN Header_rf_com_task_start */
-/**
-* @brief Function implementing the rf_com thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_rf_com_task */
-void rf_com_task(void *argument)
-{
-  /* USER CODE BEGIN rf_com_task_start */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END rf_com_task_start */
-}
-
-/* rf_timer_cb function */
-void rf_timer_cb(void *argument)
-{
-  /* USER CODE BEGIN rf_timer_cb */
-
-  /* USER CODE END rf_timer_cb */
-}
-

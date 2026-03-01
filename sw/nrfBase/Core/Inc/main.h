@@ -71,6 +71,7 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define nRF_IRQ_Pin LL_GPIO_PIN_1
 #define nRF_IRQ_GPIO_Port GPIOA
+#define nRF_IRQ_EXTI_IRQn EXTI1_IRQn
 #define nRF_CE_Pin LL_GPIO_PIN_3
 #define nRF_CE_GPIO_Port GPIOA
 #define nRF_CS_Pin LL_GPIO_PIN_4

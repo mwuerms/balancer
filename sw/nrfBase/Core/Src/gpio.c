@@ -63,11 +63,11 @@ void MX_GPIO_Init(void)
   EXTI_InitStruct.Line_32_63 = LL_EXTI_LINE_NONE;
   EXTI_InitStruct.LineCommand = ENABLE;
   EXTI_InitStruct.Mode = LL_EXTI_MODE_IT;
-  EXTI_InitStruct.Trigger = LL_EXTI_TRIGGER_RISING;
+  EXTI_InitStruct.Trigger = LL_EXTI_TRIGGER_FALLING;
   LL_EXTI_Init(&EXTI_InitStruct);
 
   /**/
-  LL_GPIO_SetPinPull(nRF_IRQ_GPIO_Port, nRF_IRQ_Pin, LL_GPIO_PULL_NO);
+  LL_GPIO_SetPinPull(nRF_IRQ_GPIO_Port, nRF_IRQ_Pin, LL_GPIO_PULL_UP);
 
   /**/
   LL_GPIO_SetPinMode(nRF_IRQ_GPIO_Port, nRF_IRQ_Pin, LL_GPIO_MODE_INPUT);
@@ -87,6 +87,10 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
   GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
   LL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  NVIC_SetPriority(EXTI1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
+  NVIC_EnableIRQ(EXTI1_IRQn);
 
 }
 
