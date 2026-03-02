@@ -94,8 +94,9 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  nrf24_Init();
-  nrf24_Open();
+  nrf24_init(nRF24_ROLE_CENTRAL);
+  nrf24_open();
+  uart_send_string_blocking("nrf42 base, start Listening for packets\n!");
   /* USER CODE END 2 */
 
   /* Init scheduler */

@@ -1,9 +1,9 @@
 /**
  * Martin Egli
- * 2022-03-08
+ * 2026-03-01
  * 
- * nRF24L01-Modul, HAL
- * basierend auf msprf24, https://github.com/spirilis/msprf24
+ * nRF24L01 module for STM32
+ * based on msprf24, https://github.com/spirilis/msprf24
  */
 
 #ifndef _NRF24_HAL_H_
@@ -11,38 +11,28 @@
 
 // - include -------------------------------------------------------------------
 #include "nrf24.h"
-#include "main.h" // "io.h"
+#include "main.h"
 
 // - public gpios --------------------------------------------------------------
 // CE: nRF24_CE_GPIO_Port, nRF24_CE_Pin
-//#define NRF24_HAL_CE_PIN		p4_SD_PEN
-#define nrf24_hal_CE_Output()	// already set
-#define nrf24_hal_CE_High()		LL_GPIO_SetOutputPin(nRF_CE_GPIO_Port, nRF_CE_Pin)
-#define nrf24_hal_CE_Low()		LL_GPIO_ResetOutputPin(nRF_CE_GPIO_Port, nRF_CE_Pin)
-#define nrf24_hal_CE_Pulse()	nrf24_hal_CE_High(); \
-								nrf24_hal_CE_High(); \
-								nrf24_hal_CE_High(); \
-								nrf24_hal_CE_High(); \
-								nrf24_hal_CE_High(); \
-								nrf24_hal_CE_High(); \
-								nrf24_hal_CE_High(); \
-								nrf24_hal_CE_High(); \
-								nrf24_hal_CE_High(); \
-								nrf24_hal_CE_High(); \
-								nrf24_hal_CE_Low()
+#define nrf24_hal_ce_out()	// already set
+#define nrf24_hal_ce_set()		LL_GPIO_SetOutputPin(nRF_CE_GPIO_Port, nRF_CE_Pin)
+#define nrf24_hal_ce_clr()		LL_GPIO_ResetOutputPin(nRF_CE_GPIO_Port, nRF_CE_Pin)
 
 // CS: nRF24_CS_GPIO_Port, nRF24_CS_Pin
-//#define NRF24_HAL_CS_PIN		p4_SD_CS
-#define nrf24_hal_CS_Output()	// already set
-#define nrf24_hal_CS_High()		LL_GPIO_SetOutputPin(nRF_CS_GPIO_Port, nRF_CS_Pin)
-#define nrf24_hal_CS_Low()		LL_GPIO_ResetOutputPin(nRF_CS_GPIO_Port, nRF_CS_Pin)
+#define nrf24_hal_cs_output()	// already set
+#define nrf24_hal_cs_set()		LL_GPIO_SetOutputPin(nRF_CS_GPIO_Port, nRF_CS_Pin)
+#define nrf24_hal_cs_clr()		LL_GPIO_ResetOutputPin(nRF_CS_GPIO_Port, nRF_CS_Pin)
 
-// IRQ: nRF24_IRQ_GPIO_Port, nRF24_IRQ_Pin, EXTI2_IRQn
-#define nrf24_hal_IRQ_Input()	// already set
-#define nrf24_hal_IRQ_IE_En()	HAL_NVIC_SetPriority(EXTI2_IRQn, 2, 0); HAL_NVIC_EnableIRQ(EXTI2_IRQn)
-#define nrf24_hal_IRQ_IE_Dis()	HAL_NVIC_DisableIRQ(EXTI2_IRQn)
-#define nrf24_hal_IRQ_Edge_HL()	LL_EXTI_EnableFallingTrig_0_31(EXTI2_IRQn)
-#define nrf24_hal_IRQ_IFG_Clr()	LL_EXTI_ClearFlag_0_31(EXTI2_IRQn)
+// IRQ: nRF_IRQ_GPIO_Port, nRF_IRQ_Pin, EXTI2_IRQn
+#define nRF_IRQ_EXTI (EXTI2_IRQn) //EXTI1_IRQn, EXTI2_IRQn
+#define nrf24_hal_irq_in()	// already set
+#define nrf24_hal_irq_get() LL_GPIO_IsInputPinSet(nRF_IRQ_GPIO_Port, nRF_IRQ_Pin)
+//#define nrf24_hal_irq_ie_en()	HAL_NVIC_SetPriority(nRF_IRQ_EXTI, 2, 0); HAL_NVIC_EnableIRQ(EXTI2_IRQn)
+#define nrf24_hal_irq_ie_dis()	HAL_NVIC_DisableIRQ(nRF_IRQ_EXTI)
+#define nrf24_hal_irq_edge_falling()	LL_EXTI_EnableFallingTrig_0_31(nRF_IRQ_EXTI)
+#define nrf24_hal_irq_ifg_set() LL_EXTI_GenerateSWI_0_31(nRF_IRQ_EXTI)
+#define nrf24_hal_irq_ifg_clr()	LL_EXTI_ClearFlag_0_31(nRF_IRQ_EXTI)
 
 // - public functions ----------------------------------------------------------
 void nrf24_hal_Init(void);
@@ -54,4 +44,7 @@ uint8_t  nrf24_hal_spi_Transfer_U8_Ctrl_CS(uint8_t b);
 uint16_t nrf24_hal_spi_Transfer_Buffer_Blocking(uint8_t *buffer, uint16_t buf_len);
 uint16_t nrf24_hal_spi_Transfer_Buffer_Blocking_Ctrl_CS(uint8_t *buffer, uint16_t buf_len);
 
+void nrf24_hal_irq_ie_en(void);
+
 #endif // _NRF24_HAL_H_
+

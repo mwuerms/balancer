@@ -1,9 +1,9 @@
 /**
  * Martin Egli
- * 2022-03-08
+ * 2026-03-01
  * 
- * nRF24L01-Modul, CMD
- * basierend auf msprf24, https://github.com/spirilis/msprf24
+ * nRF24L01 module for STM32
+ * based on msprf24, https://github.com/spirilis/msprf24
  */
 
 #ifndef _NRF24_CMD_H_
