@@ -39,8 +39,10 @@ extern "C" {
 void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-void uart_send_string_blocking(char *str);
+void uart_init(void);
 void uart_process_irq(void);
+uint16_t uart_send_buffer(uint8_t *buffer, uint16_t length);
+void uart_send_string_blocking(char *str);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

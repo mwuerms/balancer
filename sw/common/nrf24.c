@@ -15,6 +15,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include <string.h>
+#include "usart.h"
 
 // - private variables for freeRTOS tasks --------------------------------------
 typedef StaticTask_t osStaticThreadDef_t;
@@ -254,6 +255,7 @@ static void nrf24_event_task_cb(void *argument) {
 					status = nrf24_cmd_Flush_RX();
 					//uart_send_string_blocking(nrf24_ctrl.in_packet.data);
 					nrf24_ctrl.in_packet.len = 32;
+					uart_send_buffer(nrf24_ctrl.in_packet.data, nrf24_ctrl.in_packet.len);
 					status = nrf24_cmd_Write_Config((RF24_EN_CRC|RF24_CRCO|RF24_PWR_UP|RF24_PRIM_RX));
 					nrf24_hal_irq_ie_en();
 					nrf24_hal_ce_set();
@@ -288,7 +290,7 @@ static void nrf24_event_task_cb(void *argument) {
 					nrf24_ctrl.out_packet.len = 21;
 					status = nrf24_cmd_Write_TX_Payload(nrf24_ctrl.out_packet.data, nrf24_ctrl.out_packet.len);
 					nrf24_ctrl.out_packet.data[15]++;
-					if(nrf24_ctrl.out_packet.data[15] < '0'+9) {
+					if(nrf24_ctrl.out_packet.data[15] > '9') {
 						nrf24_ctrl.out_packet.data[15] = '0';
 					}
 					nrf24_hal_irq_ie_en();

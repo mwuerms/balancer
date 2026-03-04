@@ -14,4 +14,19 @@
 #error BITV defined, check for compatibility
 #endif
 
+/* template to use later on
+uint32_t primask;
+
+primask = __get_PRIMASK();  // Save current interrupt state
+__disable_irq();            // Disable all interrupts
+
+// --- Critical Section Start ---
+/ * Your critical code here * /
+// --- Critical Section End ---
+
+__set_PRIMASK(primask);     // Restore previous interrupt state
+*/
+
+
+
 #endif /* INC_UTILS_H_ */

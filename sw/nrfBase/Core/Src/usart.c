@@ -95,6 +95,55 @@ void MX_USART2_UART_Init(void)
 }
 
 /* USER CODE BEGIN 1 */
+#include "../common/utils.h"
+#include "../common/fifo.h"
+
+#define UART_BUFFER_SIZE (256)
+static volatile uint8_t uart_tx_buffer[UART_BUFFER_SIZE];
+static fifo_t uart_tx_fifo = {0};
+
+void uart_init(void) {
+	fifo_init(&uart_tx_fifo, uart_tx_buffer, UART_BUFFER_SIZE);
+}
+
+void uart_process_irq(void) {
+	if(LL_USART_IsActiveFlag_TXE(USART2)) {
+		if(fifo_try_get(&uart_tx_fifo) == false) {
+			// fifo is empty, stop here
+			LL_USART_DisableIT_TXE(USART2);
+		}
+		LL_USART_TransmitData8(USART2, ((uint8_t *)(uart_tx_fifo.data))[uart_tx_fifo.rd_proc]);
+		fifo_finalize_get(&uart_tx_fifo);
+	}
+}
+
+uint16_t uart_send_buffer(uint8_t *buffer, uint16_t length) {
+	// disable IRQ
+    uint32_t primask;
+    primask = __get_PRIMASK();  // Save current interrupt state
+    __disable_irq();            // Disable all interrupts
+
+    // later use mutex lock
+    uint16_t n;
+    for(n = 0; n < length; n++) {
+        if(fifo_try_append(&uart_tx_fifo) == false) {
+            // fifo is full, stop here
+            break;
+        }
+        ((uint8_t *)(uart_tx_fifo.data))[uart_tx_fifo.wr_proc] = buffer[n];
+        fifo_finalize_append(&uart_tx_fifo);
+    }
+
+    if(fifo_is_empty(&uart_tx_fifo) == false) {
+        // fifo is not empty, start transmitting now
+    	LL_USART_EnableIT_TXE(USART2);
+    }
+    // enable IRQ
+    __set_PRIMASK(primask);     // Restore previous interrupt state
+    // mutex unlock
+    return n;
+}
+
 void uart_send_string_blocking(char *str) {
 	while(*str != '\0') {
 		while(!LL_USART_IsActiveFlag_TXE(USART2));
@@ -103,7 +152,4 @@ void uart_send_string_blocking(char *str) {
 	}
 }
 
-void uart_process_irq(void) {
-	return;
-}
 /* USER CODE END 1 */

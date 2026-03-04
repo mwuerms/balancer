@@ -89,7 +89,7 @@ void Error_Handler(void);
 #ifdef STM32F103xB
 #define nRF_IRQ_EXTI (EXTI2_IRQn)
 #endif
-#ifdef STM32L412xB
+#ifdef STM32L412xx
 #define nRF_IRQ_EXTI (EXTI1_IRQn)
 #endif
 #ifndef nRF_IRQ_EXTI
