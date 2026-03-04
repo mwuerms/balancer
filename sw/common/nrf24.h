@@ -12,6 +12,13 @@
 // - include -------------------------------------------------------------------
 #include "main.h"
 
+// - public definitions --------------------------------------------------------
+#define nRF24_PACKET_SIZE (32)
+typedef struct {
+	uint8_t data[nRF24_PACKET_SIZE];
+	uint8_t len;
+} nrf24_packet_t;
+
 // - public variables ----------------------------------------------------------
 
 // - public functions ----------------------------------------------------------

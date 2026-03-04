@@ -80,8 +80,6 @@ static inline void nrf24_clear_all_events(void) {
 }
 
 // - private variables ---------------------------------------------------------
-#define cSIZE 32
-
 static struct {
 	uint8_t role; // nRF24_ROLE...
 	uint8_t state; // nRF24_STATE...
@@ -92,7 +90,8 @@ static struct {
 		uint8_t pipe;
 		uint8_t retries;
 	} setup;
-	uint8_t tx_buffer[cSIZE];
+	nrf24_packet_t in_packet;
+	nrf24_packet_t out_packet;
 } nrf24_ctrl;
 
 #define nRF24_STATE_NONE (0)
@@ -118,9 +117,6 @@ void nrf24_init(uint8_t role) {
 		nrf24_ctrl.setup.rxtx_addr[2] = 0xAB;
 		nrf24_ctrl.setup.rxtx_addr[3] = 0xAB;
 		nrf24_ctrl.setup.rxtx_addr[4] = 0xBA;
-		nrf24_ctrl.setup.pipe = 0;
-		nrf24_ctrl.setup.rf_ch = 76;
-		nrf24_ctrl.setup.retries = 0x25;
 	}
 	else {
 		nrf24_ctrl.role = nRF24_ROLE_PERIPHERIAL;
@@ -129,10 +125,10 @@ void nrf24_init(uint8_t role) {
 		nrf24_ctrl.setup.rxtx_addr[2] = 0xAB;
 		nrf24_ctrl.setup.rxtx_addr[3] = 0xAB;
 		nrf24_ctrl.setup.rxtx_addr[4] = 0xBA;
-		nrf24_ctrl.setup.pipe = 0;
-		nrf24_ctrl.setup.rf_ch = 76;
-		nrf24_ctrl.setup.retries = 0x25;
 	}
+	nrf24_ctrl.setup.pipe = 0;
+	nrf24_ctrl.setup.rf_ch = 76;
+	nrf24_ctrl.setup.retries = 0x25;
 
 	nrf24_cmd_Init();
 	nrf24_hal_Init();
@@ -219,34 +215,15 @@ static void nrf24_event_task_cb(void *argument) {
 
 						if(nrf24_ctrl.role == nRF24_ROLE_CENTRAL) {
 							nrf24_ctrl.state = nRF24_STATE_DO_RX;
+							status = nrf24_cmd_Flush_RX();
+							nrf24_hal_irq_ie_en();
 							status = nrf24_cmd_Write_Config((RF24_EN_CRC|RF24_CRCO|RF24_PWR_UP|RF24_PRIM_RX));
+							nrf24_hal_ce_set();
 						}
 						else {
 							// nRF24_ROLE_PERIPHERIAL
 							nrf24_ctrl.state = nRF24_STATE_STANDBY;
-							//status = nrf24_cmd_Write_Config((RF24_EN_CRC|RF24_CRCO)); // not yet RF24_PWR_UP
 							status = nrf24_cmd_Write_Config((RF24_EN_CRC|RF24_CRCO|RF24_PWR_UP));
-							nrf24_ctrl.tx_buffer[0] = 'H';
-							nrf24_ctrl.tx_buffer[1] = '3';
-							nrf24_ctrl.tx_buffer[2] = 'l';
-							nrf24_ctrl.tx_buffer[3] = 'L';
-							nrf24_ctrl.tx_buffer[4] = '0';
-							nrf24_ctrl.tx_buffer[5] = 'W';
-							nrf24_ctrl.tx_buffer[6] = '1';
-							nrf24_ctrl.tx_buffer[7] = '3';
-							nrf24_ctrl.tx_buffer[8] = 'G';
-							nrf24_ctrl.tx_buffer[9] = '3';
-							nrf24_ctrl.tx_buffer[10] = 'H';
-							nrf24_ctrl.tx_buffer[11] = 't';
-							nrf24_ctrl.tx_buffer[12] = '_';
-							nrf24_ctrl.tx_buffer[13] = '!';
-							nrf24_ctrl.tx_buffer[14] = '1';
-							nrf24_ctrl.tx_buffer[15] = '0';
-							nrf24_ctrl.tx_buffer[16] = 'a';
-							nrf24_ctrl.tx_buffer[17] = '@';
-							nrf24_ctrl.tx_buffer[18] = '#';
-							nrf24_ctrl.tx_buffer[19] = '!';
-							nrf24_ctrl.tx_buffer[20] = 0;
 							nrf24_wait_event(1000, 128);
 						}
 					}
@@ -256,44 +233,46 @@ static void nrf24_event_task_cb(void *argument) {
 				case nRF24_STATE_DO_RX:
 					if(event == nRF24_EV_RX_DONE) {
 						// read
-
+						status = nrf24_cmd_Read_FIFO_STATUS(&value);
+						status = nrf24_cmd_Read_RX_Payload(nrf24_ctrl.in_packet.data, nRF24_PACKET_SIZE);
+						status = nrf24_cmd_Flush_RX();
+						//uart_send_string_blocking(nrf24_ctrl.in_packet.data);
+						nrf24_ctrl.in_packet.len = 32;
+						status = nrf24_cmd_Write_Config((RF24_EN_CRC|RF24_CRCO|RF24_PWR_UP|RF24_PRIM_RX));
+						nrf24_hal_irq_ie_en();
+						nrf24_hal_ce_set();
 					}
 					break;
 				// ---------------------------------------------------------------------
 				case nRF24_STATE_STANDBY:
 					if(event == 128) {
-						//nrf24_process_irq();
 						nrf24_cmd_Flush_TX();
-						//status = nrf24_cmd_Write_Config((RF24_EN_CRC|RF24_CRCO|RF24_PWR_UP));
-						//nrf24_cmd_Write_Setup_Retr(nrf24_ctrl.setup.retries);
-						nrf24_wait_event(2, 129);
-					}
-					if(event == 129) {
-						nrf24_ctrl.tx_buffer[0] = 'H';
-						nrf24_ctrl.tx_buffer[1] = '3';
-						nrf24_ctrl.tx_buffer[2] = 'l';
-						nrf24_ctrl.tx_buffer[3] = 'L';
-						nrf24_ctrl.tx_buffer[4] = '0';
-						nrf24_ctrl.tx_buffer[5] = 'W';
-						nrf24_ctrl.tx_buffer[6] = '1';
-						nrf24_ctrl.tx_buffer[7] = '3';
-						nrf24_ctrl.tx_buffer[8] = 'G';
-						nrf24_ctrl.tx_buffer[9] = '3';
-						nrf24_ctrl.tx_buffer[10] = 'H';
-						nrf24_ctrl.tx_buffer[11] = 't';
-						nrf24_ctrl.tx_buffer[12] = '_';
-						nrf24_ctrl.tx_buffer[13] = '!';
-						nrf24_ctrl.tx_buffer[14] = '1';
-						//nrf24_ctrl.tx_buffer[15] = '0';
-						nrf24_ctrl.tx_buffer[16] = 'a';
-						nrf24_ctrl.tx_buffer[17] = '@';
-						nrf24_ctrl.tx_buffer[18] = '#';
-						nrf24_ctrl.tx_buffer[19] = '!';
-						nrf24_ctrl.tx_buffer[20] = 0;
-						status = nrf24_cmd_Write_TX_Payload(nrf24_ctrl.tx_buffer, 21);
-						nrf24_ctrl.tx_buffer[15]++;
-						if(nrf24_ctrl.tx_buffer[15] < '0'+9) {
-							nrf24_ctrl.tx_buffer[15] = '0';
+						nrf24_ctrl.out_packet.data[0] = 'H';
+						nrf24_ctrl.out_packet.data[1] = '3';
+						nrf24_ctrl.out_packet.data[2] = 'l';
+						nrf24_ctrl.out_packet.data[3] = 'L';
+						nrf24_ctrl.out_packet.data[4] = '0';
+						nrf24_ctrl.out_packet.data[5] = 'W';
+						nrf24_ctrl.out_packet.data[6] = '1';
+						nrf24_ctrl.out_packet.data[7] = '3';
+						nrf24_ctrl.out_packet.data[8] = 'G';
+						nrf24_ctrl.out_packet.data[9] = '3';
+						nrf24_ctrl.out_packet.data[10] = 'H';
+						nrf24_ctrl.out_packet.data[11] = 't';
+						nrf24_ctrl.out_packet.data[12] = '_';
+						nrf24_ctrl.out_packet.data[13] = '!';
+						nrf24_ctrl.out_packet.data[14] = '1';
+						//nrf24_ctrl.out_packet.data[15] = '0';
+						nrf24_ctrl.out_packet.data[16] = 'a';
+						nrf24_ctrl.out_packet.data[17] = '@';
+						nrf24_ctrl.out_packet.data[18] = '#';
+						nrf24_ctrl.out_packet.data[19] = '!';
+						nrf24_ctrl.out_packet.data[20] = 0;
+						nrf24_ctrl.out_packet.len = 21;
+						status = nrf24_cmd_Write_TX_Payload(nrf24_ctrl.out_packet.data, nrf24_ctrl.out_packet.len);
+						nrf24_ctrl.out_packet.data[15]++;
+						if(nrf24_ctrl.out_packet.data[15] < '0'+9) {
+							nrf24_ctrl.out_packet.data[15] = '0';
 						}
 						nrf24_hal_irq_ie_en();
 						nrf24_hal_ce_set();
