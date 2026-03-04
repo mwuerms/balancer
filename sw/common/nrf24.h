@@ -11,6 +11,7 @@
 
 // - include -------------------------------------------------------------------
 #include "main.h"
+#include "nrf24_msg.h"
 
 // - public definitions --------------------------------------------------------
 #define nRF24_PACKET_SIZE (32)
@@ -29,5 +30,6 @@ void nrf24_init(uint8_t role);
 void nrf24_open(void);
 void nrf24_close(void);
 void nrf24_process_irq(void);
+void nrf24_send_message(nrf24_msg_t *m);
 
 #endif // _NRF24_H_

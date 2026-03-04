@@ -44,4 +44,5 @@
 "./common/nrf24.o"
 "./common/nrf24_cmd.o"
 "./common/nrf24_hal.o"
+"./common/nrf24_msg.o"
 "./common/str_buf.o"
