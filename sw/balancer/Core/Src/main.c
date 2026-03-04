@@ -25,7 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "nrf24.h"
+#include "../common/nrf24.h"
 
 /* USER CODE END Includes */
 
