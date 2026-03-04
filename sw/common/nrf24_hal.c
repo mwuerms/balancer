@@ -54,6 +54,18 @@ void nrf24_hal_Close(void) {
 	LL_SPI_Disable(nRF24_SPI);
 }
 
+void nrf24_hal_irq_ie_en(void) {
+	nrf24_hal_irq_ie_dis();
+	NVIC_SetPriority(nRF_IRQ_EXTI, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),8, 0));
+	nrf24_hal_irq_edge_falling();
+	nrf24_hal_irq_ifg_clr();
+	HAL_NVIC_EnableIRQ(nRF_IRQ_EXTI);
+	if(nrf24_hal_irq_get() == 0) {
+		// irq is already low: set ifg
+		nrf24_hal_irq_ifg_set();
+	}
+}
+
 static inline uint8_t spi_transfer(uint8_t b) {
 	while (!LL_SPI_IsActiveFlag_TXE(nRF24_SPI));
 	LL_SPI_TransmitData8(nRF24_SPI, b);
@@ -92,16 +104,3 @@ uint16_t nrf24_hal_spi_Transfer_Buffer_Blocking_Ctrl_CS(uint8_t *buffer, uint16_
 	nrf24_hal_cs_set();
 	return n;
 }
-
-void nrf24_hal_irq_ie_en(void) {
-	nrf24_hal_irq_ie_dis();
-	NVIC_SetPriority(nRF_IRQ_EXTI, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),8, 0));
-	nrf24_hal_irq_edge_falling();
-	nrf24_hal_irq_ifg_clr();
-	HAL_NVIC_EnableIRQ(nRF_IRQ_EXTI);
-	if(nrf24_hal_irq_get() == 0) {
-		// irq is already low: set ifg
-		nrf24_hal_irq_ifg_set();
-	}
-}
-

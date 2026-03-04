@@ -29,8 +29,8 @@
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
-typedef StaticTask_t osStaticThreadDef_t;
-typedef StaticTimer_t osStaticTimerDef_t;
+typedef StaticSemaphore_t osStaticMutexDef_t;
+typedef StaticEventGroup_t osStaticEventGroupDef_t;
 /* USER CODE BEGIN PTD */
 
 /* USER CODE END PTD */
@@ -56,25 +56,21 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for rf_com */
-osThreadId_t rf_comHandle;
-uint32_t rf_com_buffer[ 128 ];
-osStaticThreadDef_t rf_com_ctrl_block;
-const osThreadAttr_t rf_com_attributes = {
-  .name = "rf_com",
-  .cb_mem = &rf_com_ctrl_block,
-  .cb_size = sizeof(rf_com_ctrl_block),
-  .stack_mem = &rf_com_buffer[0],
-  .stack_size = sizeof(rf_com_buffer),
-  .priority = (osPriority_t) osPriorityLow,
+/* Definitions for myMutex01 */
+osMutexId_t myMutex01Handle;
+osStaticMutexDef_t myMutex01ControlBlock;
+const osMutexAttr_t myMutex01_attributes = {
+  .name = "myMutex01",
+  .cb_mem = &myMutex01ControlBlock,
+  .cb_size = sizeof(myMutex01ControlBlock),
 };
-/* Definitions for rf_timer */
-osTimerId_t rf_timerHandle;
-osStaticTimerDef_t rf_timer_ctrl_block;
-const osTimerAttr_t rf_timer_attributes = {
-  .name = "rf_timer",
-  .cb_mem = &rf_timer_ctrl_block,
-  .cb_size = sizeof(rf_timer_ctrl_block),
+/* Definitions for myEvent01 */
+osEventFlagsId_t myEvent01Handle;
+osStaticEventGroupDef_t myEvent01ControlBlock;
+const osEventFlagsAttr_t myEvent01_attributes = {
+  .name = "myEvent01",
+  .cb_mem = &myEvent01ControlBlock,
+  .cb_size = sizeof(myEvent01ControlBlock),
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -83,8 +79,6 @@ const osTimerAttr_t rf_timer_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
-void rf_com_task_start(void *argument);
-void rf_timer_cb(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -109,6 +103,9 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
+  /* Create the mutex(es) */
+  /* creation of myMutex01 */
+  myMutex01Handle = osMutexNew(&myMutex01_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -117,10 +114,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
-
-  /* Create the timer(s) */
-  /* creation of rf_timer */
-  rf_timerHandle = osTimerNew(rf_timer_cb, osTimerOnce, NULL, &rf_timer_attributes);
 
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
@@ -134,12 +127,12 @@ void MX_FREERTOS_Init(void) {
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* creation of rf_com */
-  rf_comHandle = osThreadNew(rf_com_task_start, NULL, &rf_com_attributes);
-
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
+
+  /* creation of myEvent01 */
+  myEvent01Handle = osEventFlagsNew(&myEvent01_attributes);
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
@@ -163,32 +156,6 @@ void StartDefaultTask(void *argument)
     osDelay(1);
   }
   /* USER CODE END StartDefaultTask */
-}
-
-/* USER CODE BEGIN Header_rf_com_task_start */
-/**
-* @brief Function implementing the rf_com thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_rf_com_task_start */
-void rf_com_task_start(void *argument)
-{
-  /* USER CODE BEGIN rf_com_task_start */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END rf_com_task_start */
-}
-
-/* rf_timer_cb function */
-void rf_timer_cb(void *argument)
-{
-  /* USER CODE BEGIN rf_timer_cb */
-
-  /* USER CODE END rf_timer_cb */
 }
 
 /* Private application code --------------------------------------------------*/

@@ -85,6 +85,16 @@ void Error_Handler(void);
 #define nRF_CE_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+// define nRF_IRQ_EXTI depending on processor, not on the same pins
+#ifdef STM32F103xB
+#define nRF_IRQ_EXTI (EXTI2_IRQn)
+#endif
+#ifdef STM32L412xB
+#define nRF_IRQ_EXTI (EXTI1_IRQn)
+#endif
+#ifndef nRF_IRQ_EXTI
+#error nRF_IRQ_EXTI was not defined
+#endif
 
 /* USER CODE END Private defines */
 

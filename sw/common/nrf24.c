@@ -20,6 +20,7 @@
 typedef StaticTask_t osStaticThreadDef_t;
 typedef StaticQueue_t osStaticMessageQDef_t;
 typedef StaticTimer_t osStaticTimerDef_t;
+typedef StaticEventGroup_t osStaticEventGroupDef_t;
 
 osThreadId_t nrf24_event_task_handle = NULL;
 uint32_t nrf24_event_task_buffer[ 128 ];
@@ -33,7 +34,7 @@ const osThreadAttr_t nrf24_event_tas_attributes = {
   .priority = (osPriority_t) osPriorityLow,
 };
 
-osMessageQueueId_t nrf24_event_queue_handle = NULL;
+/*osMessageQueueId_t nrf24_event_queue_handle = NULL;
 uint8_t nrf24_event_queue_buffer[ 16 * sizeof( uint16_t ) ];
 osStaticMessageQDef_t nrf24_event_queue_ctrl_block;
 const osMessageQueueAttr_t nrf24_event_queue_attributes = {
@@ -42,6 +43,14 @@ const osMessageQueueAttr_t nrf24_event_queue_attributes = {
   .cb_size = sizeof(nrf24_event_queue_ctrl_block),
   .mq_mem = &nrf24_event_queue_buffer,
   .mq_size = sizeof(nrf24_event_queue_buffer)
+};*/
+
+osEventFlagsId_t nrf24_event_handle = NULL;
+osStaticEventGroupDef_t nrf24_event_ctrl_block;
+const osEventFlagsAttr_t nrf24_event_attributes = {
+  .name = "nrf24_events",
+  .cb_mem = &nrf24_event_ctrl_block,
+  .cb_size = sizeof(nrf24_event_ctrl_block),
 };
 
 osTimerId_t nrf24_timer_handle = NULL;
@@ -64,19 +73,22 @@ static inline void nrf24_wait_event(uint32_t ms, uint16_t event) {
 	}
 }
 
-#define nRF24_EV_DO_START			(1)
-#define nRF24_EV_GUARD_TIMEOUT		(2)
-#define nRF24_EV_RX_DONE			(3)
-#define nRF24_EV_TX_DONE			(4)
-#define nRF24_EV_TX_MAX_RETRY		(5)
+#define nRF24_EV_DO_START			BITV(0)
+#define nRF24_EV_GUARD_TIMEOUT		BITV(1)
+#define nRF24_EV_RX_DONE			BITV(2)
+#define nRF24_EV_TX_DONE			BITV(3)
+#define nRF24_EV_TX_MAX_RETRY		BITV(4)
+#define nRF24_EV_PROCESS_MASK (nRF24_EV_DO_START | nRF24_EV_GUARD_TIMEOUT | nRF24_EV_RX_DONE | nRF24_EV_TX_DONE | nRF24_EV_TX_MAX_RETRY)
 static inline void nrf24_send_event(uint16_t ev) {
-	osMessageQueuePut(nrf24_event_queue_handle, &ev, 0, 0);//osWaitForever);
+	//osMessageQueuePut(nrf24_event_queue_handle, &ev, 0, 0);//osWaitForever);
+	osEventFlagsSet(nrf24_event_handle, ev);
 }
 
 static inline void nrf24_clear_all_events(void) {
 	uint16_t ev;
 	// read all events from queue until it is empty
-	while(osMessageQueueGet(nrf24_event_queue_handle, &ev, 0, osWaitForever) == osOK);
+	//while(osMessageQueueGet(nrf24_event_queue_handle, &ev, 0, osWaitForever) == osOK);
+	osEventFlagsClear(nrf24_event_handle, 0xFFFFFFFF);
 }
 
 // - private variables ---------------------------------------------------------
@@ -135,12 +147,15 @@ void nrf24_init(uint8_t role) {
 
 	if(nrf24_timer_handle  == NULL) {
 		nrf24_timer_handle = osTimerNew(nrf24_timer_cb, osTimerOnce, NULL, &nrf24_timer_attributes);
-	}
+	}/*
 	if(nrf24_event_queue_handle  == NULL) {
 		nrf24_event_queue_handle = osMessageQueueNew (16, sizeof(uint16_t), &nrf24_event_queue_attributes);
-	}
+	}*/
 	if(nrf24_event_task_handle  == NULL) {
 		nrf24_event_task_handle = osThreadNew(nrf24_event_task_cb, NULL, &nrf24_event_tas_attributes);
+	}
+	if(nrf24_event_handle == NULL) {
+		nrf24_event_handle = osEventFlagsNew(&nrf24_event_attributes);
 	}
 }
 
@@ -182,110 +197,113 @@ static void nrf24_timer_cb(void *argument) {
 }
 
 static void nrf24_event_task_cb(void *argument) {
-	uint16_t event = 0;
+	uint32_t events = 0;
 	uint8_t status, value;
 	uint8_t addr_copy[RF24_ADDR_SIZE];
 
 	while(1) {
-		if(osMessageQueueGet(nrf24_event_queue_handle, &event, 0, osWaitForever) == osOK) {
-			switch(nrf24_ctrl.state) {
-				case nRF24_STATE_DO_OPEN:
-					if(event == nRF24_EV_DO_START) {
-						status = nrf24_cmd_Write_Config(0x00);
-						nRF24_cmd_Clear_Status();
-						value = 0x73;
-						status = nrf24_cmd_Transmit(0x50, &value, 1);
-						status = nrf24_cmd_Write_Features(0x07);
-						status = nrf24_cmd_Write_DYNPD(0x3F);
-						// setup ADDR, Pipe, rf_channel
-						memcpy(addr_copy, nrf24_ctrl.setup.rxtx_addr, RF24_ADDR_SIZE);	// create copy, because nrf24_cmd_Write_TX_Addr() will overwrite addr
-						addr_copy[0] += nrf24_ctrl.setup.pipe;
-						status = nrf24_cmd_Write_TX_Addr(addr_copy);
-						memcpy(addr_copy, nrf24_ctrl.setup.rxtx_addr, RF24_ADDR_SIZE);	// create copy, because nrf24_cmd_Write_RX_Addr_Px() will overwrite addr
-						addr_copy[0] += nrf24_ctrl.setup.pipe;
-						status = nrf24_cmd_Write_RX_Addr_P0(addr_copy);
+		events = osEventFlagsWait(nrf24_event_handle, nRF24_EV_PROCESS_MASK, osFlagsWaitAny, osWaitForever);
 
-						status = nrf24_cmd_Write_EN_AA(0x3F);
-						status = nrf24_cmd_Write_EN_RXADDR(0x3F);
-						status = nrf24_cmd_Write_RF_CH(nrf24_ctrl.setup.rf_ch);
-						status = nrf24_cmd_Write_Setup_Retr(nrf24_ctrl.setup.retries);
-						status = nrf24_cmd_Write_RF_Setup(0x07);
+		switch(nrf24_ctrl.state) {
+			case nRF24_STATE_DO_OPEN:
+				if(events & nRF24_EV_DO_START) {
+					status = nrf24_cmd_Write_Config(0x00);
+					nRF24_cmd_Clear_Status();
+					value = 0x73;
+					status = nrf24_cmd_Transmit(0x50, &value, 1);
+					status = nrf24_cmd_Write_Features(0x07);
+					status = nrf24_cmd_Write_DYNPD(0x3F);
+					// setup ADDR, Pipe, rf_channel
+					memcpy(addr_copy, nrf24_ctrl.setup.rxtx_addr, RF24_ADDR_SIZE);	// create copy, because nrf24_cmd_Write_TX_Addr() will overwrite addr
+					addr_copy[0] += nrf24_ctrl.setup.pipe;
+					status = nrf24_cmd_Write_TX_Addr(addr_copy);
+					memcpy(addr_copy, nrf24_ctrl.setup.rxtx_addr, RF24_ADDR_SIZE);	// create copy, because nrf24_cmd_Write_RX_Addr_Px() will overwrite addr
+					addr_copy[0] += nrf24_ctrl.setup.pipe;
+					status = nrf24_cmd_Write_RX_Addr_P0(addr_copy);
+
+					status = nrf24_cmd_Write_EN_AA(0x3F);
+					status = nrf24_cmd_Write_EN_RXADDR(0x3F);
+					status = nrf24_cmd_Write_RF_CH(nrf24_ctrl.setup.rf_ch);
+					status = nrf24_cmd_Write_Setup_Retr(nrf24_ctrl.setup.retries);
+					status = nrf24_cmd_Write_RF_Setup(0x07);
+					status = nrf24_cmd_Flush_RX();
+					status = nrf24_cmd_Flush_TX();
+
+					if(nrf24_ctrl.role == nRF24_ROLE_CENTRAL) {
+						nrf24_ctrl.state = nRF24_STATE_DO_RX;
 						status = nrf24_cmd_Flush_RX();
-						status = nrf24_cmd_Flush_TX();
-
-						if(nrf24_ctrl.role == nRF24_ROLE_CENTRAL) {
-							nrf24_ctrl.state = nRF24_STATE_DO_RX;
-							status = nrf24_cmd_Flush_RX();
-							nrf24_hal_irq_ie_en();
-							status = nrf24_cmd_Write_Config((RF24_EN_CRC|RF24_CRCO|RF24_PWR_UP|RF24_PRIM_RX));
-							nrf24_hal_ce_set();
-						}
-						else {
-							// nRF24_ROLE_PERIPHERIAL
-							nrf24_ctrl.state = nRF24_STATE_STANDBY;
-							status = nrf24_cmd_Write_Config((RF24_EN_CRC|RF24_CRCO|RF24_PWR_UP));
-							nrf24_wait_event(1000, 128);
-						}
-					}
-					break;
-
-				// ---------------------------------------------------------------------
-				case nRF24_STATE_DO_RX:
-					if(event == nRF24_EV_RX_DONE) {
-						// read
-						status = nrf24_cmd_Read_FIFO_STATUS(&value);
-						status = nrf24_cmd_Read_RX_Payload(nrf24_ctrl.in_packet.data, nRF24_PACKET_SIZE);
-						status = nrf24_cmd_Flush_RX();
-						//uart_send_string_blocking(nrf24_ctrl.in_packet.data);
-						nrf24_ctrl.in_packet.len = 32;
+						nrf24_hal_irq_ie_en();
 						status = nrf24_cmd_Write_Config((RF24_EN_CRC|RF24_CRCO|RF24_PWR_UP|RF24_PRIM_RX));
-						nrf24_hal_irq_ie_en();
 						nrf24_hal_ce_set();
 					}
-					break;
-				// ---------------------------------------------------------------------
-				case nRF24_STATE_STANDBY:
-					if(event == 128) {
-						nrf24_cmd_Flush_TX();
-						nrf24_ctrl.out_packet.data[0] = 'H';
-						nrf24_ctrl.out_packet.data[1] = '3';
-						nrf24_ctrl.out_packet.data[2] = 'l';
-						nrf24_ctrl.out_packet.data[3] = 'L';
-						nrf24_ctrl.out_packet.data[4] = '0';
-						nrf24_ctrl.out_packet.data[5] = 'W';
-						nrf24_ctrl.out_packet.data[6] = '1';
-						nrf24_ctrl.out_packet.data[7] = '3';
-						nrf24_ctrl.out_packet.data[8] = 'G';
-						nrf24_ctrl.out_packet.data[9] = '3';
-						nrf24_ctrl.out_packet.data[10] = 'H';
-						nrf24_ctrl.out_packet.data[11] = 't';
-						nrf24_ctrl.out_packet.data[12] = '_';
-						nrf24_ctrl.out_packet.data[13] = '!';
-						nrf24_ctrl.out_packet.data[14] = '1';
-						//nrf24_ctrl.out_packet.data[15] = '0';
-						nrf24_ctrl.out_packet.data[16] = 'a';
-						nrf24_ctrl.out_packet.data[17] = '@';
-						nrf24_ctrl.out_packet.data[18] = '#';
-						nrf24_ctrl.out_packet.data[19] = '!';
-						nrf24_ctrl.out_packet.data[20] = 0;
-						nrf24_ctrl.out_packet.len = 21;
-						status = nrf24_cmd_Write_TX_Payload(nrf24_ctrl.out_packet.data, nrf24_ctrl.out_packet.len);
-						nrf24_ctrl.out_packet.data[15]++;
-						if(nrf24_ctrl.out_packet.data[15] < '0'+9) {
-							nrf24_ctrl.out_packet.data[15] = '0';
-						}
-						nrf24_hal_irq_ie_en();
-						nrf24_hal_ce_set();
-						nrf24_wait_event(2, 130);
+					else {
+						// nRF24_ROLE_PERIPHERIAL
+						nrf24_ctrl.state = nRF24_STATE_STANDBY;
+						status = nrf24_cmd_Write_Config((RF24_EN_CRC|RF24_CRCO|RF24_PWR_UP));
+						nrf24_wait_event(1000, nRF24_EV_TX_DONE);
 					}
-					if(event == 130) {
-						nrf24_hal_ce_clr();
-						nrf24_wait_event(1000, 128);
+				}
+				break;
+
+			// ---------------------------------------------------------------------
+			case nRF24_STATE_DO_RX:
+				if(events & nRF24_EV_RX_DONE) {
+					// read
+					status = nrf24_cmd_Read_FIFO_STATUS(&value);
+					status = nrf24_cmd_Read_RX_Payload(nrf24_ctrl.in_packet.data, nRF24_PACKET_SIZE);
+					status = nrf24_cmd_Flush_RX();
+					//uart_send_string_blocking(nrf24_ctrl.in_packet.data);
+					nrf24_ctrl.in_packet.len = 32;
+					status = nrf24_cmd_Write_Config((RF24_EN_CRC|RF24_CRCO|RF24_PWR_UP|RF24_PRIM_RX));
+					nrf24_hal_irq_ie_en();
+					nrf24_hal_ce_set();
+				}
+				break;
+
+			// ---------------------------------------------------------------------
+			case nRF24_STATE_STANDBY:
+				if(events & nRF24_EV_TX_DONE) {
+					nrf24_cmd_Flush_TX();
+					nrf24_ctrl.out_packet.data[0] = 'H';
+					nrf24_ctrl.out_packet.data[1] = '3';
+					nrf24_ctrl.out_packet.data[2] = 'l';
+					nrf24_ctrl.out_packet.data[3] = 'L';
+					nrf24_ctrl.out_packet.data[4] = '0';
+					nrf24_ctrl.out_packet.data[5] = 'W';
+					nrf24_ctrl.out_packet.data[6] = '1';
+					nrf24_ctrl.out_packet.data[7] = '3';
+					nrf24_ctrl.out_packet.data[8] = 'G';
+					nrf24_ctrl.out_packet.data[9] = '3';
+					nrf24_ctrl.out_packet.data[10] = 'H';
+					nrf24_ctrl.out_packet.data[11] = 't';
+					nrf24_ctrl.out_packet.data[12] = '_';
+					nrf24_ctrl.out_packet.data[13] = '!';
+					nrf24_ctrl.out_packet.data[14] = '1';
+					//nrf24_ctrl.out_packet.data[15] = '0';
+					nrf24_ctrl.out_packet.data[16] = 'a';
+					nrf24_ctrl.out_packet.data[17] = '@';
+					nrf24_ctrl.out_packet.data[18] = '#';
+					nrf24_ctrl.out_packet.data[19] = '!';
+					nrf24_ctrl.out_packet.data[20] = 0;
+					nrf24_ctrl.out_packet.len = 21;
+					status = nrf24_cmd_Write_TX_Payload(nrf24_ctrl.out_packet.data, nrf24_ctrl.out_packet.len);
+					nrf24_ctrl.out_packet.data[15]++;
+					if(nrf24_ctrl.out_packet.data[15] < '0'+9) {
+						nrf24_ctrl.out_packet.data[15] = '0';
 					}
-					break;
-				case nRF24_STATE_NONE:
-				default: ;
-			}
+					nrf24_hal_irq_ie_en();
+					nrf24_hal_ce_set();
+					nrf24_wait_event(2, nRF24_EV_TX_MAX_RETRY);
+				}
+				if(events & nRF24_EV_TX_MAX_RETRY) {
+					nrf24_hal_ce_clr();
+					nrf24_wait_event(1000, nRF24_EV_TX_DONE);
+				}
+				break;
+
+			// ---------------------------------------------------------------------
+			case nRF24_STATE_NONE:
+			default: ;
 		}
 		osDelay(1);
 	}
