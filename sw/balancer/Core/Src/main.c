@@ -95,16 +95,8 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-  LL_GPIO_SetOutputPin(nRF_CE_GPIO_Port, nRF_CE_Pin);
-  LL_GPIO_ResetOutputPin(nRF_CE_GPIO_Port, nRF_CE_Pin);
-  LL_GPIO_SetOutputPin(nRF_CS_GPIO_Port, nRF_CS_Pin);
-  LL_GPIO_SetOutputPin(nRF_CE_GPIO_Port, nRF_CE_Pin);
-    LL_GPIO_ResetOutputPin(nRF_CE_GPIO_Port, nRF_CE_Pin);
-  LL_GPIO_ResetOutputPin(nRF_CS_GPIO_Port, nRF_CS_Pin);
-  LL_GPIO_SetOutputPin(LED_GPIO_Port, LED_Pin);
-  LL_GPIO_ResetOutputPin(LED_GPIO_Port, LED_Pin);
-
   nrf24_init(nRF24_ROLE_PERIPHERIAL);
+  //nrf24_init(nRF24_ROLE_TESTING);
   nrf24_open();
   /* USER CODE END 2 */
 

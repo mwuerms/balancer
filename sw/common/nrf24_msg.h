@@ -29,6 +29,8 @@ typedef struct  __attribute__((packed)) {
 
 void nrf24_msg_init(void);
 void nrf24_msg_send_string(char *str);
+
+void nrf24_receive_packet(nrf24_msg_t *m);
 void nrf24_msg_parse(nrf24_msg_t *m);
 
 #endif // _NRF24_MSG_H_

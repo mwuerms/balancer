@@ -18,15 +18,15 @@
 #include "usart.h"
 
 // - private variables for freeRTOS tasks --------------------------------------
-osThreadId_t nrf24_event_task_handle = NULL;
-uint32_t nrf24_event_task_buffer[ 128 ];
-StaticTask_t nrf24_event_task_ctrl_block;
-const osThreadAttr_t nrf24_event_tas_attributes = {
-  .name = "nrf24_event_task",
-  .cb_mem = &nrf24_event_task_ctrl_block,
-  .cb_size = sizeof(nrf24_event_task_ctrl_block),
-  .stack_mem = &nrf24_event_task_buffer[0],
-  .stack_size = sizeof(nrf24_event_task_buffer),
+osThreadId_t nrf24_rxtx_task_handle = NULL;
+uint32_t nrf24_rxtx_task_buffer[ 128 ];
+StaticTask_t nrf24_rxtx_task_ctrl_block;
+const osThreadAttr_t nrf24_rxtx_task_attributes = {
+  .name = "nrf24_rxtx_task",
+  .cb_mem = &nrf24_rxtx_task_ctrl_block,
+  .cb_size = sizeof(nrf24_rxtx_task_ctrl_block),
+  .stack_mem = &nrf24_rxtx_task_buffer[0],
+  .stack_size = sizeof(nrf24_rxtx_task_buffer),
   .priority = (osPriority_t) osPriorityLow,
 };
 
@@ -46,18 +46,6 @@ const osTimerAttr_t nrf24_timer_attributes = {
   .cb_size = sizeof(nrf24_timer_ctrl_block),
 };
 
-#define NRF24_MSG_IN_QUEUE_SIZE (8)
-osMessageQueueId_t nrf24_msg_in_queue_handle = NULL;
-uint8_t nrf24_msg_in_queue_buffer[ NRF24_MSG_IN_QUEUE_SIZE * sizeof(nrf24_msg_t)];
-StaticQueue_t nrf24_msg_in_queue_ctrl_block;
-const osMessageQueueAttr_t nrf24_msg_in_queue_attributes = {
-  .name = "nrf24_msg_in_queue",
-  .cb_mem = &nrf24_msg_in_queue_ctrl_block,
-  .cb_size = sizeof(nrf24_msg_in_queue_ctrl_block),
-  .mq_mem = &nrf24_msg_in_queue_buffer,
-  .mq_size = sizeof(nrf24_msg_in_queue_buffer)
-};
-
 #define NRF24_MSG_OUT_QUEUE_SIZE (8)
 osMessageQueueId_t nrf24_msg_out_queue_handle = NULL;
 uint8_t nrf24_msg_out_queue_buffer[ NRF24_MSG_OUT_QUEUE_SIZE * sizeof(nrf24_msg_t)];
@@ -70,7 +58,7 @@ const osMessageQueueAttr_t nrf24_msg_out_queue_attributes = {
   .mq_size = sizeof(nrf24_msg_out_queue_buffer)
 };
 
-static void nrf24_event_task_cb(void *argument);
+static void nrf24_rxtx_task_cb(void *argument);
 static void nrf24_timer_cb(void *argument);
 // - private app functions for freeRTOS ----------------------------------------
 static uint16_t nrf24_timer_event = 0;
@@ -119,6 +107,7 @@ static struct {
 #define nRF24_STATE_CLOSED (0)
 #define nRF24_STATE_DO_RX (1)
 #define nRF24_STATE_STANDBY (2)
+#define nRF24_STATE_TESTING (255)
 
 #define nRF24_STATUS_OFF                0x00
 #define nRF24_STATUS_ACTIVE             0x01
@@ -135,9 +124,13 @@ void nrf24_init(uint8_t role) {
 		nrf24_ctrl.role = nRF24_ROLE_CENTRAL;
 		nrf24_ctrl.setup.rxtx_addr[1] = 0xCE;
 	}
-	else {
+	else if (role == nRF24_ROLE_PERIPHERIAL){
 		nrf24_ctrl.role = nRF24_ROLE_PERIPHERIAL;
 		nrf24_ctrl.setup.rxtx_addr[1] = 0xCE;//0xD1;
+	}
+	else { // role == nRF24_ROLE_TESTING
+		nrf24_ctrl.role = nRF24_ROLE_TESTING;
+		nrf24_ctrl.state = nRF24_STATE_TESTING;
 	}
 	nrf24_ctrl.setup.rxtx_addr[2] = 0xAB;
 	nrf24_ctrl.setup.rxtx_addr[3] = 0xAB;
@@ -154,14 +147,11 @@ void nrf24_init(uint8_t role) {
 	if(nrf24_timer_handle  == NULL) {
 		nrf24_timer_handle = osTimerNew(nrf24_timer_cb, osTimerOnce, NULL, &nrf24_timer_attributes);
 	}
-	if(nrf24_event_task_handle  == NULL) {
-		nrf24_event_task_handle = osThreadNew(nrf24_event_task_cb, NULL, &nrf24_event_tas_attributes);
+	if(nrf24_rxtx_task_handle  == NULL) {
+		nrf24_rxtx_task_handle = osThreadNew(nrf24_rxtx_task_cb, NULL, &nrf24_rxtx_task_attributes);
 	}
 	if(nrf24_event_handle == NULL) {
 		nrf24_event_handle = osEventFlagsNew(&nrf24_event_attributes);
-	}
-	if(nrf24_msg_in_queue_handle == NULL) {
-		nrf24_msg_in_queue_handle = osMessageQueueNew(NRF24_MSG_IN_QUEUE_SIZE, sizeof(nrf24_msg_t), &nrf24_msg_in_queue_attributes);
 	}
 	if(nrf24_msg_out_queue_handle == NULL) {
 		nrf24_msg_out_queue_handle = osMessageQueueNew(NRF24_MSG_OUT_QUEUE_SIZE, sizeof(nrf24_msg_t), &nrf24_msg_out_queue_attributes);
@@ -173,6 +163,9 @@ void nrf24_open(void) {
 		// do open
 		nrf24_hal_Open();
 		nrf24_wait_event(100, nRF24_EV_DO_START);
+	}
+	else if(nrf24_ctrl.state == nRF24_STATE_TESTING) {
+		nrf24_wait_event(1000, nRF24_EV_TX_DONE);
 	}
 }
 
@@ -199,7 +192,7 @@ void nrf24_process_irq(void) {
 
 void nrf24_send_message(nrf24_msg_t *m) {
 	osStatus_t ans;
-	if((ans = osMessageQueuePut(nrf24_msg_out_queue_handle, &m, 0, 0)) == osOK) {
+	if((ans = osMessageQueuePut(nrf24_msg_out_queue_handle, m, 0, 0)) == osOK) {
 		nrf24_send_event(nRF24_EV_MSG);
 	}
 	//return ans;
@@ -215,7 +208,7 @@ static void nrf24_timer_cb(void *argument) {
 	}
 }
 
-static void nrf24_event_task_cb(void *argument) {
+static void nrf24_rxtx_task_cb(void *argument) {
 	uint32_t events = 0;
 	uint8_t status, value;
 	uint8_t addr_copy[RF24_ADDR_SIZE];
@@ -286,47 +279,24 @@ static void nrf24_event_task_cb(void *argument) {
 				if(events & nRF24_EV_MSG) {
 					if(osMessageQueueGet(nrf24_msg_out_queue_handle, &m, 0, 0) == osOK) {
 						nrf24_cmd_Flush_TX();
-						status = nrf24_cmd_Write_TX_Payload((uint8_t *)&m, m.len);
+						status = nrf24_cmd_Write_TX_Payload((uint8_t *)&m, m.len+2);
 						nrf24_hal_irq_ie_en();
 						nrf24_hal_ce_set();
 						nrf24_wait_event(2, nRF24_EV_TX_MAX_RETRY);
 					}
 				}
-				if(events & nRF24_EV_TX_DONE) {
-					nrf24_cmd_Flush_TX();
-					nrf24_ctrl.out_packet.data[0] = 'H';
-					nrf24_ctrl.out_packet.data[1] = '3';
-					nrf24_ctrl.out_packet.data[2] = 'l';
-					nrf24_ctrl.out_packet.data[3] = 'L';
-					nrf24_ctrl.out_packet.data[4] = '0';
-					nrf24_ctrl.out_packet.data[5] = 'W';
-					nrf24_ctrl.out_packet.data[6] = '1';
-					nrf24_ctrl.out_packet.data[7] = '3';
-					nrf24_ctrl.out_packet.data[8] = 'G';
-					nrf24_ctrl.out_packet.data[9] = '3';
-					nrf24_ctrl.out_packet.data[10] = 'H';
-					nrf24_ctrl.out_packet.data[11] = 't';
-					nrf24_ctrl.out_packet.data[12] = '_';
-					nrf24_ctrl.out_packet.data[13] = '!';
-					nrf24_ctrl.out_packet.data[14] = '1';
-					nrf24_ctrl.out_packet.data[15] = nrf24_ctrl.cnt;
-					nrf24_ctrl.out_packet.data[16] = 'a';
-					nrf24_ctrl.out_packet.data[17] = '@';
-					nrf24_ctrl.out_packet.data[18] = '#';
-					nrf24_ctrl.out_packet.data[19] = '!';
-					nrf24_ctrl.out_packet.data[20] = 0;
-					nrf24_ctrl.out_packet.len = 21;
-					status = nrf24_cmd_Write_TX_Payload(nrf24_ctrl.out_packet.data, nrf24_ctrl.out_packet.len);
-					nrf24_ctrl.cnt++;
-					if(nrf24_ctrl.cnt > '9') {
-						nrf24_ctrl.cnt = '0';
-					}
-					nrf24_hal_irq_ie_en();
-					nrf24_hal_ce_set();
-					nrf24_wait_event(2, nRF24_EV_TX_MAX_RETRY);
-				}
 				if(events & nRF24_EV_TX_MAX_RETRY) {
 					nrf24_hal_ce_clr();
+					nrf24_wait_event(1000, nRF24_EV_TX_DONE);
+				}
+				break;
+
+			// ---------------------------------------------------------------------
+			case nRF24_STATE_TESTING:
+				if(events & nRF24_EV_MSG) {
+					if(osMessageQueueGet(nrf24_msg_out_queue_handle, &m, 0, 0) == osOK) {
+						nrf24_msg_parse(&m);
+					}
 					nrf24_wait_event(1000, nRF24_EV_TX_DONE);
 				}
 				break;
