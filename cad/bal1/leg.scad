@@ -49,52 +49,52 @@ module leg01a(show_elements = 1, loc_res = 32) {
                     hull() {
                         translate([+8, 0, -2])
                         rotate([-90, 0, 0])
-                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        cylinder(d = 4, h = 50, $fn = loc_res);
                         translate([+8, 0, -8])
                         rotate([-90, 0, 0])
-                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        cylinder(d = 4, h = 50, $fn = loc_res);
                         translate([+12, 0, -2])
                         rotate([-90, 0, 0])
-                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        cylinder(d = 4, h = 50, $fn = loc_res);
                         translate([+12, 0, -8])
                         rotate([-90, 0, 0])
-                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        cylinder(d = 4, h = 50, $fn = loc_res);
                     }
                     hull() {
                         translate([-8, 0, -2])
                         rotate([-90, 0, 0])
-                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        cylinder(d = 4, h = 50, $fn = loc_res);
                         translate([-8, 0, -8])
                         rotate([-90, 0, 0])
-                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        cylinder(d = 4, h = 50, $fn = loc_res);
                         translate([-12, 0, -2])
                         rotate([-90, 0, 0])
-                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        cylinder(d = 4, h = 50, $fn = loc_res);
                         translate([-12, 0, -8])
                         rotate([-90, 0, 0])
-                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        cylinder(d = 4, h = 50, $fn = loc_res);
                     }
                     // mounts to upper stage
                     hull() {
-                        translate([+10, 50, -10])
-                        cylinder(d = 8, h = 10, $fn = loc_res);
-                        translate([-10, 50, -10])
-                        cylinder(d = 8, h = 10, $fn = loc_res);
-                        translate([+16, 56, -10])
-                        cylinder(d = 8, h = 10, $fn = loc_res);
-                        translate([-16, 56, -10])
-                        cylinder(d = 8, h = 10, $fn = loc_res);
+                        translate([+10, 41, -10])
+                        cylinder(d = 6, h = 10, $fn = loc_res);
+                        translate([-10, 41, -10])
+                        cylinder(d = 6, h = 10, $fn = loc_res);
+                        translate([+16, 47, -10])
+                        cylinder(d = 6, h = 10, $fn = loc_res);
+                        translate([-16, 47, -10])
+                        cylinder(d = 6, h = 10, $fn = loc_res);
                     }
                     hull() {
-                        translate([+19, 56, -10])
+                        translate([+18, 47, -10])
                         cylinder(d = 2, h = 10, $fn = loc_res);
-                        translate([+19, 64, -10])
+                        translate([+18, 54, -10])
                         cylinder(d = 2, h = 10, $fn = loc_res);
                     }
                     hull() {
-                        translate([-19, 56, -10])
+                        translate([-18, 47, -10])
                         cylinder(d = 2, h = 10, $fn = loc_res);
-                        translate([-19, 64, -10])
+                        translate([-18, 54, -10])
                         cylinder(d = 2, h = 10, $fn = loc_res);
                     }
                     
@@ -194,13 +194,13 @@ module leg01a(show_elements = 1, loc_res = 32) {
             cylinder(d = 3, h = 110, $fn = loc_res);
         }
         // cut leg mounting holes
-        translate([+16, 56, -17])
+        translate([+16, 47, -17])
         cylinder(d = 3.2, h = 18, $fn = loc_res);
-        translate([-16, 56, -17])
+        translate([-16, 47, -17])
         cylinder(d = 3.2, h = 18, $fn = loc_res);
-        translate([0, 56, -17])
+        translate([0, 47, -17])
         cylinder(d = 3.2, h = 18, $fn = loc_res);
-        translate([0, 50, -17])
+        translate([0, 41, -17])
         cylinder(d = 3.2, h = 18, $fn = loc_res);
         
         // cut out usbc

@@ -340,7 +340,7 @@ module samsung_mobilephone(col = "DarkGray", loc_res = 32) {
         cylinder(d = 4, h = 10, $fn = loc_res);
     }
 }
-samsung_mobilephone();
+//samsung_mobilephone();
 
 module generic_pcb(col = "LightGreen", wid = 100, len = 160, th = 1.5) {
     color(col)
