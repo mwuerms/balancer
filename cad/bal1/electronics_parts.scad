@@ -270,7 +270,7 @@ module lipo500mAh(col = "LightGray", loc_res = 32) {
 }
 //lipo500mAh();
 
-module samsung_mobilephone(col = "DarkGray", loc_res = 32) {
+module google_pxl7a_mobilephone(col = "LightBlue", loc_res = 32) {
     color(col)
     hull() {
         translate([+70/2, +140/2, -2]) {
@@ -294,6 +294,7 @@ module samsung_mobilephone(col = "DarkGray", loc_res = 32) {
             cylinder(r = 8, h = 8, $fn = loc_res);
         }
     }
+    // USBC
     hull() {
         translate([+5, -140/2, 4])
         rotate([90, 0, 0])
@@ -303,7 +304,43 @@ module samsung_mobilephone(col = "DarkGray", loc_res = 32) {
         cylinder(d = 4, h = 10, $fn = loc_res);
     }
 }
-//samsung_mobilephone();
+//google_pxl7a_mobilephone();
+
+module samsung_mobilephone(col = "DarkGray", loc_res = 32) {
+    color(col)
+    hull() {
+        translate([+((74-10)/2), +((146-10)/2), 0]) {
+            cylinder(r = 8, h = 10, $fn = loc_res);
+            translate([0, 0, 2])
+            cylinder(r = 10, h = 8, $fn = loc_res);
+        }
+        translate([+((74-10)/2), -((146-10)/2), 0]) {
+            cylinder(r = 8, h = 10, $fn = loc_res);
+            translate([0, 0, 2])
+            cylinder(r = 10, h = 8, $fn = loc_res);
+        }
+        translate([-((74-10)/2), +((146-10)/2), 0]) {
+            cylinder(r = 8, h = 10, $fn = loc_res);
+            translate([0, 0, 2])
+            cylinder(r = 10, h = 8, $fn = loc_res);
+        }
+        translate([-((74-10)/2), -((146-10)/2), 0]) {
+            cylinder(r = 8, h = 10, $fn = loc_res);
+            translate([0, 0, 2])
+            cylinder(r = 10, h = 8, $fn = loc_res);
+        }
+    }
+    // USBC
+    hull() {
+        translate([+5, -140/2, 4])
+        rotate([90, 0, 0])
+        cylinder(d = 4, h = 10, $fn = loc_res);
+        translate([-5, -140/2, 4])
+        rotate([90, 0, 0])
+        cylinder(d = 4, h = 10, $fn = loc_res);
+    }
+}
+samsung_mobilephone();
 
 module generic_pcb(col = "LightGreen", wid = 100, len = 160, th = 1.5) {
     color(col)

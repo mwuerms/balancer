@@ -39,35 +39,63 @@ module leg01a(show_elements = 1, loc_res = 32) {
         union() {
             difference() {
                 union() {
-                    translate([+0, +0, -16])
-                    cylinder(r = 24, h = 16, $fn = loc_res);
+                    hull() {
+                        translate([+0, +0, -10])
+                        cylinder(r = 25, h = 10, $fn = loc_res);
+                        *translate([+0, +0, -16])
+                        cylinder(r = 22, h = 16, $fn = loc_res);
+                    }
                     // legs
                     hull() {
-                        translate([+10, 0, -4])
+                        translate([+8, 0, -2])
                         rotate([-90, 0, 0])
-                        cylinder(d = 8, h = 60, $fn = loc_res);
-                        translate([+10, 0, -12])
+                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        translate([+8, 0, -8])
                         rotate([-90, 0, 0])
-                        cylinder(d = 8, h = 60, $fn = loc_res);
+                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        translate([+12, 0, -2])
+                        rotate([-90, 0, 0])
+                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        translate([+12, 0, -8])
+                        rotate([-90, 0, 0])
+                        cylinder(d = 4, h = 60, $fn = loc_res);
                     }
                     hull() {
-                        translate([-10, 0, -4])
+                        translate([-8, 0, -2])
                         rotate([-90, 0, 0])
-                        cylinder(d = 8, h = 60, $fn = loc_res);
-                        translate([-10, 0, -12])
+                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        translate([-8, 0, -8])
                         rotate([-90, 0, 0])
-                        cylinder(d = 8, h = 60, $fn = loc_res);
+                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        translate([-12, 0, -2])
+                        rotate([-90, 0, 0])
+                        cylinder(d = 4, h = 60, $fn = loc_res);
+                        translate([-12, 0, -8])
+                        rotate([-90, 0, 0])
+                        cylinder(d = 4, h = 60, $fn = loc_res);
                     }
                     // mounts to upper stage
                     hull() {
-                        translate([+10, 50, -16])
-                        cylinder(d = 8, h = 16, $fn = loc_res);
-                        translate([-10, 50, -16])
-                        cylinder(d = 8, h = 16, $fn = loc_res);
-                        translate([+16, 56, -16])
-                        cylinder(d = 8, h = 16, $fn = loc_res);
-                        translate([-16, 56, -16])
-                        cylinder(d = 8, h = 16, $fn = loc_res);
+                        translate([+10, 50, -10])
+                        cylinder(d = 8, h = 10, $fn = loc_res);
+                        translate([-10, 50, -10])
+                        cylinder(d = 8, h = 10, $fn = loc_res);
+                        translate([+16, 56, -10])
+                        cylinder(d = 8, h = 10, $fn = loc_res);
+                        translate([-16, 56, -10])
+                        cylinder(d = 8, h = 10, $fn = loc_res);
+                    }
+                    hull() {
+                        translate([+19, 56, -10])
+                        cylinder(d = 2, h = 10, $fn = loc_res);
+                        translate([+19, 64, -10])
+                        cylinder(d = 2, h = 10, $fn = loc_res);
+                    }
+                    hull() {
+                        translate([-19, 56, -10])
+                        cylinder(d = 2, h = 10, $fn = loc_res);
+                        translate([-19, 64, -10])
+                        cylinder(d = 2, h = 10, $fn = loc_res);
                     }
                     
                 }
@@ -112,9 +140,13 @@ module leg01a(show_elements = 1, loc_res = 32) {
         m3_nut_bolt_cut(4, 20, m3_nut_dia = 7);
         // cutout for motor cables
         hull() {
-            translate([+4, +18, -17])
+            translate([+4, +20, -17])
             cylinder(d = 4, h = 20, $fn = loc_res);
-            translate([-4, +18, -17])
+            translate([-4, +20, -17])
+            cylinder(d = 4, h = 20, $fn = loc_res);
+            translate([+4, +30, -17])
+            cylinder(d = 4, h = 20, $fn = loc_res);
+            translate([-4, +30, -17])
             cylinder(d = 4, h = 20, $fn = loc_res);
         }
         hull() {
@@ -128,12 +160,22 @@ module leg01a(show_elements = 1, loc_res = 32) {
             cylinder(d = 7, h = 7, $fn = loc_res);
         }
         // cutput cables in legs
-        *translate([+10, 0, -12])
-        rotate([-90, 0, 0])
-        cylinder(d = 4, h = 110, $fn = loc_res);
-        *translate([-10, 0, -12])
-        rotate([-90, 0, 0])
-        cylinder(d = 4, h = 110, $fn = loc_res);
+        hull() {
+            translate([+10, 10, -14])
+            rotate([-90, 0, 0])
+            cylinder(d = 4, h = 110, $fn = loc_res);
+            translate([+10, 24, -4])
+            rotate([-90, 0, 0])
+            cylinder(d = 4, h = 110, $fn = loc_res);
+        }
+        hull() {
+            translate([-10, 10, -14])
+            rotate([-90, 0, 0])
+            cylinder(d = 4, h = 110, $fn = loc_res);
+            translate([-10, 24, -4])
+            rotate([-90, 0, 0])
+            cylinder(d = 4, h = 110, $fn = loc_res);
+        }
         
         hull() {
             translate([+10, 0, -14])
@@ -186,9 +228,14 @@ module leg01a(show_elements = 1, loc_res = 32) {
     }
     
 }
-*leg01a(0, loc_res = 64);
+leg01a(0, loc_res = 32);
+
+module leg01b(show_elements = 1, loc_res = 32) {
+    echo("creat a cover plate for odrive mocro");
+}
+*leg01b();
 
 // print 
-leg01a(0, loc_res = 128); // 1 x
+*leg01a(0, loc_res = 128); // 1 x
 *magnet_holder_8mm_6x5mm_magnet(0, loc_res = 128); // 1 x
 *magnet_holder_5mm_v1_0(128); // 1 x

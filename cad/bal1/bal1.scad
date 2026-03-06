@@ -15,7 +15,7 @@
         rotate([90, 0, 0])
         generic_pcb(wid = 34*2, len = 80);
         
-        translate([0, -10, 138])
+        translate([0, -8, 138])
         rotate([90, 0, 0])
         samsung_mobilephone();
         translate([+24, 10, 61])
