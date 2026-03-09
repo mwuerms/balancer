@@ -7,7 +7,7 @@
 use <parts.scad>
 
 module pcbMPU9250(loc_res = 32) {
-    origin();
+    *origin();
     color("Blue") {
         difference() {
             translate([0, 0, 0])
@@ -54,7 +54,7 @@ module pcbMPU6500(loc_res = 32) {
 }
 
 module pcbBluePill(loc_res = 32) {
-    origin();
+    *origin();
     color("Blue") {
         translate([0, 0, 0])
         cube([53, 22.5, 1.5]);

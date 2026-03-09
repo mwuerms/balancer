@@ -47,10 +47,11 @@ module front_panel(th = 2, loc_res = 32)  {
             rotate([90, 0, 0])
             cylinder(d = 3, h = th, $fn = loc_res);
         }
+        
         // cut a lot of holes to save space
-            translate([30, 0, 50])
-            rotate([90, 0, 0])
-            cylinder(d = 20, h = th+2, $fn = loc_res);
+        translate([30, 0, 50])
+        rotate([90, 0, 0])
+        cylinder(d = 16, h = th+2, $fn = loc_res);
     }
 }
 
@@ -66,6 +67,12 @@ module middle_horizontal_panels(th = 2, loc_res = 32)  {
             translate([60, -1, 0])
             cylinder(d = 4, h = th, $fn = loc_res);
         }
+        // cut cable shaft through all
+        translate([+2, 1, -1])
+        cylinder(d = 6, h = th+2, $fn = loc_res);
+        translate([+58, 1, -1])
+        cylinder(d = 6, h = th+2, $fn = loc_res);
+        
         // cut a lot of holes to save space
         translate([30, 18/2-1, -1])
         cylinder(d = 16, h = th+2, $fn = loc_res);
@@ -90,6 +97,31 @@ module upper_horizontal_panels(th = 2, loc_res = 32)  {
     }
 }
 
+module component_door(loc_res = 32) {
+    hull() {
+        translate([(2+0.5), 0, -2])
+        rotate([90, 0, 90])
+        cylinder(d = 2, h = 59, $fn = loc_res);
+        translate([(2+0.5), 29, -2])
+        rotate([90, 0, 90])
+        cylinder(d = 2, h = 59, $fn = loc_res);
+    }    
+    // hinges on the left + right
+    translate([(2+0.5), 0, 0])
+    rotate([90, 0, 90]) {
+        cylinder(d = 6, h = 2, $fn = loc_res);
+        translate([0, 0, -2.5])
+        cylinder(d = 3, h = 4, $fn = loc_res);
+    }
+    translate([60-0.5, 0, 0])
+    rotate([90, 0, 90]) {
+        cylinder(d = 6, h = 2, $fn = loc_res);
+        translate([0, 0, 0.5])
+        cylinder(d = 3, h = 4, $fn = loc_res);
+    }
+    
+}
+
 module upper_cage(loc_res = 32) {
     difference() {
         union() {
@@ -105,14 +137,14 @@ module upper_cage(loc_res = 32) {
             front_panel(loc_res = loc_res);
             
             // between batteries panel
-            translate([-30, 0, 44])
+            translate([-30, 0, 48])
             middle_horizontal_panels(loc_res = loc_res);
             // middle panel
-            translate([-30, 0, 44+37])
+            translate([-30, 0, 48+37])
             middle_horizontal_panels(loc_res = loc_res);
             
             // upper panel
-            translate([-30, 0, 44+37+30])
+            translate([-30, 0, 48+37+30])
             upper_horizontal_panels(loc_res = loc_res);
         }
         // cut m3 holes leg mount
@@ -125,28 +157,45 @@ module upper_cage(loc_res = 32) {
         translate([-50, 0, 6])
         rotate([90, 0, 90])
         cylinder(d = 3.2, h = 100, $fn = loc_res);
+        // cut holes to mount component door on the back
+        translate([-50, 16, 17.3])
+        rotate([90, 0, 90])
+        cylinder(d = 3.2, h = 100, $fn = loc_res);
+        
+        // cut out hole for batteries
+        translate([+20, -1, 50])
+        cube([16, 18, 35]);
+        translate([+20, -1, 128-41])
+        cube([16, 18, 35]);
     }
+    
+    translate([-32, 16, 17.3])
+    rotate([90, 0, 0])
+    component_door(loc_res = 32);
 }
  
 module elements(show_elements = 1, loc_res = 32) {
     if(show_elements) {
-        translate([-34, +2, 77])
+        translate([-30, +0, 88])
         rotate([0, 90, 0])
         pcbMPU9250();
         
-        *translate([-34, 0, 50])
+        *translate([-59/2, 1, 50])
         rotate([90, 0, 0])
-        generic_pcb(wid = 34*2, len = 80);
+        generic_pcb(wid = 59, len = 30, col = "Salmon");
         
-        translate([0, -7, 128])
+        *translate([0, -7, 128])
         rotate([90, 0, 0])
         //samsung_mobilephone();
         google_pxl7a_mobilephone();
         
-        translate([+24, 9, 50])
+        translate([+25, 9, 91])
         lipo500mAh();
-        translate([+24, 9, 87])
+        translate([+25, 9, 128])
         lipo500mAh();
+        translate([+29, 1, 54])
+        rotate([90, 0, 180])
+        pcbBluePill(loc_res = loc_res);
     }
 }
 
