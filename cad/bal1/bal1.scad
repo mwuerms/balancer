@@ -167,6 +167,10 @@ module upper_cage(loc_res = 32) {
         cube([16, 18, 35]);
         translate([+20, -1, 128-41])
         cube([16, 18, 35]);
+        
+        // cut out hole for rockswitch
+        translate([+33, 6, 64-41])
+        rockswitch_cut();
     }
     
     translate([-32, 16, 17.3])
@@ -193,9 +197,12 @@ module elements(show_elements = 1, loc_res = 32) {
         lipo500mAh();
         translate([+25, 9, 128])
         lipo500mAh();
-        translate([+29, 1, 54])
-        rotate([90, 0, 180])
+        translate([+27, 17, 86])
+        rotate([-90, 0, 180])
         pcbBluePill(loc_res = loc_res);
+        
+        translate([+33, 6, 64])
+        rockswitch();
     }
 }
 

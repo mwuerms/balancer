@@ -269,6 +269,32 @@ module lipo500mAh(col = "LightGray", loc_res = 32) {
     }
 }
 //lipo500mAh();
+module lipo500mAh_cut(loc_res = 32) {
+    translate([-(64-16/2), -17/2, 0])
+    cube([72, 17, 34]);
+}
+lipo500mAh_cut();
+
+module rockswitch(col = "DarkGray", loc_res = 32) {
+    color(col) {
+        translate([2, -11/2, 4])
+        rotate([0, -30, 0])
+        cube([4, 11, 8]);
+        translate([0, -15/2, 0])
+        cube([2, 15, 21]);
+        translate([-12, -13/2, 0])
+        cube([12, 13, 21]);
+        translate([-20, -1/2, (21-16)/2])
+        cube([12, 1, 16]);
+    }
+}
+//rockswitch();
+
+module rockswitch_cut(loc_res = 32) {
+    translate([-20, -13.4/2, -0.2])
+    cube([25, 13.4, 21.4]);
+}
+//rockswitch_cut();
 
 module google_pxl7a_mobilephone(col = "LightBlue", loc_res = 32) {
     color(col)
