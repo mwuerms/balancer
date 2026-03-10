@@ -273,7 +273,7 @@ module lipo500mAh_cut(loc_res = 32) {
     translate([-(64-16/2), -17/2, 0])
     cube([72, 17, 34]);
 }
-lipo500mAh_cut();
+//lipo500mAh_cut();
 
 module rockswitch(col = "DarkGray", loc_res = 32) {
     color(col) {
@@ -373,3 +373,46 @@ module generic_pcb(col = "LightGreen", wid = 100, len = 160, th = 1.5) {
     translate([0, 0, 0])
     cube([wid, len, th]);
 }
+
+//PTV09A-4030F
+module poti_PTV09A_4(loc_res = 32) {
+    // knob
+    color("DarkGray") {
+        cylinder(d = 6.8, h = 15, $fn = loc_res);
+    }
+    // ody
+    color("LightBlue") {
+        translate([-10/2, -10/2, 0])
+        cube([10, 12, 6.8]);
+    }
+    // contacts
+    color("Silver") {
+        translate([-(10.6-2)/2, 0, -3.8])
+        cylinder(d = 2, h = 6.8, $fn = loc_res);
+        translate([+(10.6-2)/2, 0, -3.8])
+        cylinder(d = 2, h = 6.8, $fn = loc_res);
+        
+        translate([+(5)/2, 7, -3.8])
+        cylinder(d = 1, h = 6.8, $fn = loc_res);
+        translate([0, 7, -3.8])
+        cylinder(d = 1, h = 6.8, $fn = loc_res);
+        translate([-(5)/2, 7, -3.8])
+        cylinder(d = 1, h = 6.8, $fn = loc_res);
+    }
+}
+poti_PTV09A_4();
+
+module poti_PTV09A_4_cut(loc_res = 32) {
+    translate([-(10.6-2)/2, 0, -5])
+    cylinder(d = 2.5, h = 10, $fn = loc_res);
+    translate([+(10.6-2)/2, 0, -5])
+    cylinder(d = 2.5, h = 10, $fn = loc_res);
+    
+    translate([+(5)/2, 7, -5])
+    cylinder(d = 1.1, h = 10, $fn = loc_res);
+    translate([0, 7, -5])
+    cylinder(d = 1.1, h = 10, $fn = loc_res);
+    translate([-(5)/2, 7, -5])
+    cylinder(d = 1.1, h = 10, $fn = loc_res);
+}
+//poti_PTV09A_4_cut();
