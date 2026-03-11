@@ -83,6 +83,17 @@ void Error_Handler(void);
 #define nRF_MISO_GPIO_Port GPIOA
 #define nRF_CE_Pin LL_GPIO_PIN_0
 #define nRF_CE_GPIO_Port GPIOB
+#define ACC_CS_Pin LL_GPIO_PIN_12
+#define ACC_CS_GPIO_Port GPIOB
+#define ACC_SCK_Pin LL_GPIO_PIN_13
+#define ACC_SCK_GPIO_Port GPIOB
+#define ACC_MISO_Pin LL_GPIO_PIN_14
+#define ACC_MISO_GPIO_Port GPIOB
+#define ACC_MOSI_Pin LL_GPIO_PIN_15
+#define ACC_MOSI_GPIO_Port GPIOB
+#define ACC_IRQ_Pin LL_GPIO_PIN_8
+#define ACC_IRQ_GPIO_Port GPIOA
+#define ACC_IRQ_EXTI_IRQn EXTI9_5_IRQn
 
 /* USER CODE BEGIN Private defines */
 // define nRF_IRQ_EXTI depending on processor, not on the same pins

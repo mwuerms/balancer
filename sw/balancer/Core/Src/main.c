@@ -26,7 +26,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "../common/nrf24.h"
-
+#include "sensor.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -93,11 +93,14 @@ int main(void)
   MX_GPIO_Init();
   MX_CAN_Init();
   MX_SPI1_Init();
+  MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
 
-  nrf24_init(nRF24_ROLE_PERIPHERIAL);
+  sensor_init();
+
+  //nrf24_init(nRF24_ROLE_PERIPHERIAL);
   //nrf24_init(nRF24_ROLE_TESTING);
-  nrf24_open();
+  //nrf24_open();
   /* USER CODE END 2 */
 
   /* Init scheduler */
