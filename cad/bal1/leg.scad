@@ -336,12 +336,124 @@ module mount_between_legs(wid = 20, loc_res = 32) {
         cylinder(d = 6, h = middle_wid, $fn = loc_res);
     }
 }
-color("LightBlue")
+*color("LightBlue")
 translate([0, -47, 0])
 leg01a(0, loc_res = 18);
-mount_between_legs(60);
+*mount_between_legs(60);
+
+module leg_stand_mount(mount_wid = 4, loc_res = 32) {
+    wid = 10.2;
+    difference() {
+        union() {
+            // mounts to upper stage
+            translate([0, 0, -(mount_wid + wid)])
+            hull() {
+                translate([+10, -6, -0])
+                cylinder(d = 6, h = mount_wid, $fn = loc_res);
+                translate([-10, -6, -0])
+                cylinder(d = 6, h = mount_wid, $fn = loc_res);
+                translate([+16, 0, -0])
+                cylinder(d = 6, h = mount_wid, $fn = loc_res);
+                translate([-16, 0, -0])
+                cylinder(d = 6, h = mount_wid, $fn = loc_res);
+            }
+            translate([0, 0, 0])
+            hull() {
+                translate([+10, -6, -0])
+                cylinder(d = 6, h = mount_wid, $fn = loc_res);
+                translate([-10, -6, -0])
+                cylinder(d = 6, h = mount_wid, $fn = loc_res);
+                translate([+16, 0, -0])
+                cylinder(d = 6, h = mount_wid, $fn = loc_res);
+                translate([-16, 0, -0])
+                cylinder(d = 6, h = mount_wid, $fn = loc_res);
+            }
+            hull() {
+                translate([+14, 7, +15])
+                rotate([90, 0, 0])
+                cylinder(d = 4, h = 4, $fn = loc_res);
+                translate([-14, 7, +15])
+                rotate([90, 0, 0])
+                cylinder(d = 4, h = 4, $fn = loc_res);
+                translate([+14, 7, -(wid+15)])
+                rotate([90, 0, 0])
+                cylinder(d = 4, h = 4, $fn = loc_res);
+                translate([-14, 7, -(wid+15)])
+                rotate([90, 0, 0])
+                cylinder(d = 4, h = 4, $fn = loc_res);
+            }
+            
+        }
+        // cut leg mounting holes + space for M3 nuts
+        translate([+16, 0, 0]) {
+            translate([0, 0, -(mount_wid + wid)])
+            cylinder(d = 3.2, h = (2*mount_wid + wid)+1, $fn = loc_res);
+            translate([0, 0, -(mount_wid + wid)-0.1])
+            cylinder(d1 = 6, d2 = 3.2, h = 2, $fn = loc_res);
+            translate([0, 0, mount_wid-2])
+            m3_nut_cut(2+1);
+        }
+        translate([-16, 0, 0]) {
+            translate([0, 0, -(mount_wid + wid)])
+            cylinder(d = 3.2, h = (2*mount_wid + wid)+1, $fn = loc_res);
+            translate([0, 0, -(mount_wid + wid)-0.1])
+            cylinder(d1 = 6, d2 = 3.2, h = 2, $fn = loc_res);
+            translate([0, 0, mount_wid-2])
+            m3_nut_cut(2+1);
+        }
+        translate([0, 0, 0]) {
+            translate([0, 0, -(mount_wid + wid)])
+            cylinder(d = 3.2, h = (2*mount_wid + wid)+1, $fn = loc_res);
+            translate([0, 0, -(mount_wid + wid)-0.1])
+            cylinder(d1 = 6, d2 = 3.2, h = 2, $fn = loc_res);
+            translate([0, 0, mount_wid-2])
+            m3_nut_cut(2+1);
+        }
+        translate([0, -6, 0]) {
+            translate([0, 0, -(mount_wid + wid)])
+            cylinder(d = 3.2, h = (2*mount_wid + wid)+1, $fn = loc_res);
+            translate([0, 0, -(mount_wid + wid)-0.1])
+            cylinder(d1 = 6, d2 = 3.2, h = 2, $fn = loc_res);
+            translate([0, 0, mount_wid-2])
+            m3_nut_cut(2+1);
+        }
+        // cut space for leg
+        hull() {
+            translate([+20, 0, -wid])
+            cylinder(d = 6.5, h = wid, $fn = loc_res);
+            translate([-20, 0, -wid])
+            cylinder(d = 6.5, h = wid, $fn = loc_res);
+            translate([+20, -20, -wid])
+            cylinder(d = 6.5, h = wid, $fn = loc_res);
+            translate([-20, -20, -wid])
+            cylinder(d = 6.5, h = wid, $fn = loc_res);
+        }
+        // cut wood screw
+        translate([+8, 8, 10])
+        rotate([90, 0, 0])
+        cylinder(d = 4, h = 4+2, $fn = loc_res);
+        translate([-8, 8, 10])
+        rotate([90, 0, 0])
+        cylinder(d = 4, h = 4+2, $fn = loc_res);
+        translate([+8, 8, -(10+wid)])
+        rotate([90, 0, 0])
+        cylinder(d = 4, h = 4+2, $fn = loc_res);
+        translate([-8, 8, -(10+wid)])
+        rotate([90, 0, 0])
+        cylinder(d = 4, h = 4+2, $fn = loc_res);
+    }
+}
+*color("LightBlue")
+translate([0, -47, 0])
+leg01a(0, loc_res = 18);
+*leg_stand_mount(loc_res = 32);
+
+
 
 // print 
 *leg01a(0, loc_res = 128); // 1 x
 *magnet_holder_8mm_6x5mm_magnet(0, loc_res = 128); // 1 x
 *magnet_holder_5mm_v1_0(128); // 1 x
+
+*leg_stand_mount(loc_res = 128); // 1 x
+lego_axis_holder_v1_1(0, loc_res = 128); // 2 x

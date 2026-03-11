@@ -27,6 +27,7 @@ module lego_axis_cut(len = 10) {
         cube([1.4, 4.8, len]);
     }
 }
+lego_axis_cut();
 
 module bldc5010_m3cut_rotor(show = 1, len = 10, loc_res = 32) {
     if(show) {
@@ -179,4 +180,4 @@ module roller_bearing(dia1 = 3, dia2 = 5, h1 = 4*5, h2 = 5, h3 = 2*5, loc_res = 
     translate([0, 0, h2])
     cylinder(d = dia2, h = h3, $fn = loc_res);
 }
-bldc5010_motor();
+//bldc5010_motor();
