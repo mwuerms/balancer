@@ -14,6 +14,9 @@
 
 // - public functions ----------------------------------------------------------
 void mpu9250_init(void);
+void mpu9250_start(void);
+void mpu9250_stop(void);
+
 uint8_t mpu9250_read_who_am_i(void);
 uint16_t mpu9250_read_config(void);
 uint16_t mpu9250_write_config(void);
@@ -27,5 +30,9 @@ uint16_t mpu9250_read_sensor_values(void);
 float mpu9250_get_acc_xy_angle_deg(void);
 int16_t mpu9250_get_gyr_z_rate_raw(void);
 float mpu9250_get_gyr_z_angle_rate_deg_pro_s(void);
+
+int16_t mpu9250_get_acc_xyz(int16_t *acc);
+int16_t mpu9250_get_temp(void);
+int16_t mpu9250_get_gyro_xyz(int16_t *gyro);
 
 #endif // _MPU9250_H_

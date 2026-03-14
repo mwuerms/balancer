@@ -88,18 +88,18 @@ module leg01a(show_elements = 1, loc_res = 32) {
                     hull() {
                         translate([+18, 47, -10])
                         cylinder(d = 2, h = 10, $fn = loc_res);
-                        translate([+18, 54, -10])
+                        translate([+18, 52, -10])
                         cylinder(d = 2, h = 10, $fn = loc_res);
                     }
                     hull() {
                         translate([-18, 47, -10])
                         cylinder(d = 2, h = 10, $fn = loc_res);
-                        translate([-18, 54, -10])
+                        translate([-18, 52, -10])
                         cylinder(d = 2, h = 10, $fn = loc_res);
                     }
                     
                 }
-                translate([0, 0, -17])
+                *translate([0, 0, -17])
                 hull() {
                     translate([+13, +13, -0])
                     cylinder(d = 7, h = 7, $fn = loc_res);
@@ -112,6 +112,10 @@ module leg01a(show_elements = 1, loc_res = 32) {
                 }
                 translate([-26/2, -26/2, -11])
                 cube([26, 26, 6]);
+                translate([-20/2, -33/2, -11])
+                cube([20, 33, 6]);
+                translate([-33/2, -20/2, -11])
+                cube([33, 20, 6]);
             }
             translate([+13, +13, -10])
             cylinder(d = 6, h = 5, $fn = loc_res);
@@ -150,6 +154,16 @@ module leg01a(show_elements = 1, loc_res = 32) {
             cylinder(d = 4, h = 20, $fn = loc_res);
         }
         hull() {
+            translate([+4, +10, -11])
+            cylinder(d = 4, h = 6, $fn = loc_res);
+            translate([-4, +10, -11])
+            cylinder(d = 4, h = 6, $fn = loc_res);
+            translate([+4, +30, -11])
+            cylinder(d = 4, h = 6, $fn = loc_res);
+            translate([-4, +30, -11])
+            cylinder(d = 4, h = 6, $fn = loc_res);
+        }
+        hull() {
             translate([+5, +17, -17])
             cylinder(d = 8, h = 7, $fn = loc_res);
             translate([-5, +17, -17])
@@ -158,6 +172,13 @@ module leg01a(show_elements = 1, loc_res = 32) {
             cylinder(d = 7, h = 7, $fn = loc_res);
             translate([-13, +13, -17])
             cylinder(d = 7, h = 7, $fn = loc_res);
+        }
+        // cutout in the middle so the motor and oddrive micro can be installed
+        hull() {
+            translate([0, 30, -17])
+            cylinder(d = 5, h = 20, $fn = loc_res);
+            translate([0, 0, -17])
+            cylinder(d = 5, h = 20, $fn = loc_res);
         }
         // cutput cables in legs
         hull() {
@@ -228,7 +249,7 @@ module leg01a(show_elements = 1, loc_res = 32) {
     }
     
 }
-*leg01a(0, loc_res = 32);
+leg01a(0, loc_res = 32);
 
 module leg01b(show_elements = 1, loc_res = 32) {
     echo("creat a cover plate for odrive mocro");
@@ -456,4 +477,4 @@ leg01a(0, loc_res = 18);
 *magnet_holder_5mm_v1_0(128); // 1 x
 
 *leg_stand_mount(loc_res = 128); // 1 x
-lego_axis_holder_v1_1(0, loc_res = 128); // 2 x
+*lego_axis_holder_v1_1(0, loc_res = 128); // 2 x

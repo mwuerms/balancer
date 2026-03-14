@@ -36,7 +36,7 @@ void nrf24_hal_Open(void) {
 	nrf24_hal_irq_in();
 	nrf24_hal_irq_edge_falling();
 
-	// SPI1 konfigurieren (Beispiel)...
+	// SPI1 konfigurieren
 	LL_SPI_SetMode(nRF24_SPI, LL_SPI_MODE_MASTER);
 	LL_SPI_SetDataWidth(nRF24_SPI, LL_SPI_DATAWIDTH_8BIT);
 	LL_SPI_SetClockPolarity(nRF24_SPI, LL_SPI_POLARITY_LOW);

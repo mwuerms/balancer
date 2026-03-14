@@ -29,6 +29,7 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
 
+#include "stm32f1xx_ll_adc.h"
 #include "stm32f1xx_ll_spi.h"
 #include "stm32f1xx_ll_system.h"
 #include "stm32f1xx_ll_gpio.h"
@@ -73,6 +74,8 @@ void Error_Handler(void);
 #define nRF_IRQ_Pin LL_GPIO_PIN_2
 #define nRF_IRQ_GPIO_Port GPIOA
 #define nRF_IRQ_EXTI_IRQn EXTI2_IRQn
+#define nRF_CE_Pin LL_GPIO_PIN_3
+#define nRF_CE_GPIO_Port GPIOA
 #define nRF_CS_Pin LL_GPIO_PIN_4
 #define nRF_CS_GPIO_Port GPIOA
 #define nRF_SCK_Pin LL_GPIO_PIN_5
@@ -81,8 +84,6 @@ void Error_Handler(void);
 #define nRF_MOSI_GPIO_Port GPIOA
 #define nRF_MISO_Pin LL_GPIO_PIN_7
 #define nRF_MISO_GPIO_Port GPIOA
-#define nRF_CE_Pin LL_GPIO_PIN_0
-#define nRF_CE_GPIO_Port GPIOB
 #define ACC_CS_Pin LL_GPIO_PIN_12
 #define ACC_CS_GPIO_Port GPIOB
 #define ACC_SCK_Pin LL_GPIO_PIN_13
