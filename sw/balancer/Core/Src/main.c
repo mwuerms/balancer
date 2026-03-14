@@ -101,9 +101,9 @@ int main(void)
   sensor_init();
   sensor_start_continous();
 
-  //nrf24_init(nRF24_ROLE_PERIPHERIAL);
+  nrf24_init(nRF24_ROLE_PERIPHERIAL);
   //nrf24_init(nRF24_ROLE_TESTING);
-  //nrf24_open();
+  nrf24_open();
   /* USER CODE END 2 */
 
   /* Init scheduler */

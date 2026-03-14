@@ -41,7 +41,7 @@ module leg01a(show_elements = 1, loc_res = 32) {
                 union() {
                     hull() {
                         translate([+0, +0, -10])
-                        cylinder(r = 25, h = 10, $fn = loc_res);
+                        cylinder(r = 23, h = 10, $fn = loc_res);
                         *translate([+0, +0, -16])
                         cylinder(r = 22, h = 16, $fn = loc_res);
                     }
@@ -60,7 +60,7 @@ module leg01a(show_elements = 1, loc_res = 32) {
                         rotate([-90, 0, 0])
                         cylinder(d = 4, h = 50, $fn = loc_res);
                     }
-                    hull() {
+                    *hull() {
                         translate([-8, 0, -2])
                         rotate([-90, 0, 0])
                         cylinder(d = 4, h = 50, $fn = loc_res);
@@ -174,7 +174,7 @@ module leg01a(show_elements = 1, loc_res = 32) {
             cylinder(d = 7, h = 7, $fn = loc_res);
         }
         // cutout in the middle so the motor and oddrive micro can be installed
-        hull() {
+        *hull() {
             translate([0, 30, -17])
             cylinder(d = 5, h = 20, $fn = loc_res);
             translate([0, 0, -17])

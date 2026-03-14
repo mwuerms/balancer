@@ -21,7 +21,12 @@ typedef struct  __attribute__((packed)) {
 	uint8_t data[nRF24_MSG_SIZE];
 } nrf24_msg_t;
 
+#define nRF24_MSG_ID_ACC_TEMP_GYRO_VALUES (0xA1)
+//#define nRF24_MSG_ID_GYRO_VALUES (0xA2)
+//#define nRF24_MSG_ID_xx_VALUES (0xA)
+
 #define nRF24_MSG_ID_STRING (0xD0)
+
 
 // - public variables ----------------------------------------------------------
 
@@ -29,8 +34,9 @@ typedef struct  __attribute__((packed)) {
 
 void nrf24_msg_init(void);
 void nrf24_msg_send_string(char *str);
+void nrf24_msg_send_acc_temp_gyro_values(int16_t acc_x, int16_t acc_y, int16_t acc_z, int16_t temp, int16_t gyro_x, int16_t gyro_y, int16_t gyro_z);
+
 
 void nrf24_receive_packet(nrf24_msg_t *m);
-void nrf24_msg_parse(nrf24_msg_t *m);
 
 #endif // _NRF24_MSG_H_

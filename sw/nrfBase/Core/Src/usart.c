@@ -111,6 +111,7 @@ void uart_process_irq(void) {
 		if(fifo_try_get(&uart_tx_fifo) == false) {
 			// fifo is empty, stop here
 			LL_USART_DisableIT_TXE(USART2);
+			return;
 		}
 		LL_USART_TransmitData8(USART2, ((uint8_t *)(uart_tx_fifo.data))[uart_tx_fifo.rd_proc]);
 		fifo_finalize_get(&uart_tx_fifo);

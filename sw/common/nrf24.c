@@ -200,12 +200,13 @@ void nrf24_send_message(nrf24_msg_t *m) {
 
 // - FreeRTOS callbacks --------------------------------------------------------
 static void nrf24_timer_cb(void *argument) {
-	if(nrf24_timer_event == nRF24_EV_TX_DONE) {
+	nrf24_send_event(nrf24_timer_event);
+	/*if(nrf24_timer_event == nRF24_EV_TX_DONE) {
 		nrf24_msg_send_string("teststfing!");
 	}
 	else {
 		nrf24_send_event(nrf24_timer_event);
-	}
+	}*/
 }
 
 static void nrf24_rxtx_task_cb(void *argument) {
@@ -263,12 +264,10 @@ static void nrf24_rxtx_task_cb(void *argument) {
 				if(events & nRF24_EV_RX_DONE) {
 					// read
 					status = nrf24_cmd_Read_FIFO_STATUS(&value);
-					status = nrf24_cmd_Read_RX_Payload(nrf24_ctrl.in_packet.data, nRF24_PACKET_SIZE);
+					status = nrf24_cmd_Read_RX_Payload((uint8_t *)&m, nRF24_PACKET_SIZE);
 					status = nrf24_cmd_Flush_RX();
-					//uart_send_string_blocking(nrf24_ctrl.in_packet.data);
-					nrf24_ctrl.in_packet.len = 32;
-					uart_send_buffer(nrf24_ctrl.in_packet.data, nrf24_ctrl.in_packet.len);
 					status = nrf24_cmd_Write_Config((RF24_EN_CRC|RF24_CRCO|RF24_PWR_UP|RF24_PRIM_RX));
+					nrf24_receive_packet(&m);
 					nrf24_hal_irq_ie_en();
 					nrf24_hal_ce_set();
 				}
@@ -295,7 +294,7 @@ static void nrf24_rxtx_task_cb(void *argument) {
 			case nRF24_STATE_TESTING:
 				if(events & nRF24_EV_MSG) {
 					if(osMessageQueueGet(nrf24_msg_out_queue_handle, &m, 0, 0) == osOK) {
-						nrf24_msg_parse(&m);
+						nrf24_receive_packet(&m);
 					}
 					nrf24_wait_event(1000, nRF24_EV_TX_DONE);
 				}

@@ -15,6 +15,8 @@
 #include "adc.h"
 #include "utils.h"
 
+#include "nrf24_msg.h"
+
 // - FreeRTOS tasks ------------------------------------------------------------
 osThreadId_t sensor_task_handle = NULL;
 uint32_t sensor_task_buffer[ 128 ];
@@ -62,9 +64,11 @@ static void sensor_task_cb(void *argument) {
 		if(events & EV_READ_SENSORS) {
 			adc_single_conversion(adc_values, 4);
 			mpu9250_read_sensor_values();
-			mpu9250_get_acc_xyz(&acc);
+			mpu9250_get_acc_xyz(acc);
 			temp = mpu9250_get_temp();
-			mpu9250_get_gyro_xyz(&gyro);
+			mpu9250_get_gyro_xyz(gyro);
+
+			nrf24_msg_send_acc_temp_gyro_values(acc[0], acc[1], acc[2], temp, gyro[0], gyro[1], gyro[2]);
 			sensor_cnt++;
 		}
 	}
@@ -87,6 +91,6 @@ void sensor_init(void) {
 void sensor_start_continous(void) {
 	adc_single_conversion(adc_values, 4);
 	mpu9250_start();
-	osTimerStart(sensor_timer_handle, pdMS_TO_TICKS(1000));
+	osTimerStart(sensor_timer_handle, pdMS_TO_TICKS(100));
 }
 
