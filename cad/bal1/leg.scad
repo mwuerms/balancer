@@ -249,7 +249,7 @@ module leg01a(show_elements = 1, loc_res = 32) {
     }
     
 }
-leg01a(0, loc_res = 32);
+*leg01a(0, loc_res = 32);
 
 module leg01b(show_elements = 1, loc_res = 32) {
     echo("creat a cover plate for odrive mocro");
@@ -294,7 +294,7 @@ module mount_between_legs(wid = 20, loc_res = 32) {
                 cylinder(d = 6, h = 0.1, $fn = loc_res);
                 translate([+6.4, -6, mount_wid])
                 cylinder(d = 6, h = 0.1, $fn = loc_res);
-                translate([+4, -6, (wid-middle_wid)/2+1])
+                translate([+4, -6, (wid-middle_wid)/2])
                 cylinder(d = 6, h = 0.1, $fn = loc_res);
             }
             hull() {
@@ -304,17 +304,29 @@ module mount_between_legs(wid = 20, loc_res = 32) {
                 cylinder(d = 6, h = 0.1, $fn = loc_res);
                 translate([+6.4, -6, wid-mount_wid-0.1])
                 cylinder(d = 6, h = 0.1, $fn = loc_res);
-                translate([+4, -6, (wid-middle_wid)/2+middle_wid-1])
+                translate([+4, -6, (wid-middle_wid)/2+middle_wid])
                 cylinder(d = 6, h = 0.1, $fn = loc_res);
             }
             // between mounts
             hull() {
                 translate([-10, -6, mount_wid])
-                cylinder(d = 6, h = wid-2*mount_wid, $fn = loc_res);
+                cylinder(d = 6, h = 0.1, $fn = loc_res);
                 translate([-9.4, -0, mount_wid])
-                cylinder(d = 6, h = wid-2*mount_wid, $fn = loc_res);
+                cylinder(d = 6, h = 0.1, $fn = loc_res);
                 translate([-6.4, -6, mount_wid])
-                cylinder(d = 6, h = wid-2*mount_wid, $fn = loc_res);
+                cylinder(d = 6, h = 0.1, $fn = loc_res);
+                translate([-4, -6, (wid-middle_wid)/2])
+                cylinder(d = 6, h = 0.1, $fn = loc_res);
+            }
+            hull() {
+                translate([-10, -6, wid-mount_wid-0.1])
+                cylinder(d = 6, h = 0.1, $fn = loc_res);
+                translate([-9.4, -0, wid-mount_wid-0.1])
+                cylinder(d = 6, h = 0.1, $fn = loc_res);
+                translate([-6.4, -6, wid-mount_wid-0.1])
+                cylinder(d = 6, h = 0.1, $fn = loc_res);
+                translate([-4, -6, (wid-middle_wid)/2+middle_wid])
+                cylinder(d = 6, h = 0.1, $fn = loc_res);
             }
         }
         // cut leg mounting holes + space for M3 nuts
@@ -351,16 +363,22 @@ module mount_between_legs(wid = 20, loc_res = 32) {
     }
     // put in the middle
     hull() {
+        translate([+4, -7.5, (wid-middle_wid)/2])
+        cylinder(d = 3, h = middle_wid, $fn = loc_res);
+        translate([-4, -7.5, (wid-middle_wid)/2])
+        cylinder(d = 3, h = middle_wid, $fn = loc_res);
+    }
+
         translate([+4, -6, (wid-middle_wid)/2])
         cylinder(d = 6, h = middle_wid, $fn = loc_res);
-        translate([-6.4, -6, (wid-middle_wid)/2])
+        translate([-4, -6, (wid-middle_wid)/2])
         cylinder(d = 6, h = middle_wid, $fn = loc_res);
-    }
+    
 }
 *color("LightBlue")
 translate([0, -47, 0])
 leg01a(0, loc_res = 18);
-*mount_between_legs(60);
+*mount_between_legs(40);
 
 module leg_stand_mount(mount_wid = 4, loc_res = 32) {
     wid = 10.2;

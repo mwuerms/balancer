@@ -386,10 +386,10 @@ module puttogether(loc_res = 32) {
     translate([0, 0, 41])
     upper_cage(loc_res = loc_res);
 }
-*puttogether(loc_res = 32);
+puttogether(loc_res = 32);
 
 // print
 *upper_cage(0, loc_res = 128); // 1 x
 *component_door(loc_res = 128); // 1 x
 *leg01a(0, loc_res = 128); // 2 x
-mount_between_legs(40, loc_res = 128); // 1 x
+*mount_between_legs(40, loc_res = 128); // 1 x
