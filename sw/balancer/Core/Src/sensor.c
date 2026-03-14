@@ -55,6 +55,7 @@ uint16_t adc_values[4];
 int16_t acc[3];
 int16_t temp;
 int16_t gyro[3];
+float angle_deg;
 static volatile uint16_t sensor_cnt = 0;
 static void sensor_task_cb(void *argument) {
 	uint32_t events = 0;
@@ -67,8 +68,10 @@ static void sensor_task_cb(void *argument) {
 			mpu9250_get_acc_xyz(acc);
 			temp = mpu9250_get_temp();
 			mpu9250_get_gyro_xyz(gyro);
+			angle_deg = mpu9250_get_acc_xy_angle_deg();
 
-			nrf24_msg_send_acc_temp_gyro_values(acc[0], acc[1], acc[2], temp, gyro[0], gyro[1], gyro[2]);
+			//nrf24_msg_send_mpu9250_values(acc[0], acc[1], acc[2], temp, gyro[0], gyro[1], gyro[2]);
+			nrf24_msg_send_angle_values(angle_deg, acc[0], acc[1], gyro[2]);
 			sensor_cnt++;
 		}
 	}
@@ -91,6 +94,6 @@ void sensor_init(void) {
 void sensor_start_continous(void) {
 	adc_single_conversion(adc_values, 4);
 	mpu9250_start();
-	osTimerStart(sensor_timer_handle, pdMS_TO_TICKS(100));
+	osTimerStart(sensor_timer_handle, pdMS_TO_TICKS(250));
 }
 

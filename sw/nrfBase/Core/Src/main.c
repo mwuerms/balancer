@@ -95,7 +95,12 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   uart_init();
-  uart_send_string_blocking("nrf42 base, start Listening for packets\n!");
+  uart_send_string("nrf42 base");
+  uart_send_string("\n+ file: ");
+  uart_send_string(__FILE__);
+  uart_send_string("\n+ compile date: ");
+  uart_send_string(__DATE__);
+  uart_send_string("\nstart Listening for packets:\n");
   nrf24_init(nRF24_ROLE_CENTRAL);
   nrf24_open();
   /* USER CODE END 2 */

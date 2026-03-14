@@ -145,6 +145,33 @@ uint16_t uart_send_buffer(uint8_t *buffer, uint16_t length) {
     return n;
 }
 
+uint16_t uart_send_string(char *str) {
+	// disable IRQ
+    uint32_t primask;
+    primask = __get_PRIMASK();  // Save current interrupt state
+    __disable_irq();            // Disable all interrupts
+
+    // later use mutex lock
+    uint16_t n;
+    for(n = 0; str[n] != 0; n++) {
+    	if(fifo_try_append(&uart_tx_fifo) == false) {
+			// fifo is full, stop here
+			break;
+		}
+		((uint8_t *)(uart_tx_fifo.data))[uart_tx_fifo.wr_proc] = str[n];
+		fifo_finalize_append(&uart_tx_fifo);
+    }
+
+    if(fifo_is_empty(&uart_tx_fifo) == false) {
+        // fifo is not empty, start transmitting now
+    	LL_USART_EnableIT_TXE(USART2);
+    }
+    // enable IRQ
+    __set_PRIMASK(primask);     // Restore previous interrupt state
+    // mutex unlock
+    return n;
+}
+
 void uart_send_string_blocking(char *str) {
 	while(*str != '\0') {
 		while(!LL_USART_IsActiveFlag_TXE(USART2));

@@ -64,7 +64,7 @@ void nrf24_msg_send_string(char *str) {
 	// assume str has space in nRF24_MSG_DATA_SIZE for now, check later
 	m.id = nRF24_MSG_ID_STRING;
 	for(n = 0; n < nRF24_MSG_DATA_SIZE; n++) {
-		m.data[n] = str[n];
+		m.data.u8[n] = str[n];
 		if(str[n] == 0) {
 			// found end
 			break;
@@ -74,22 +74,36 @@ void nrf24_msg_send_string(char *str) {
 	nrf24_send_message(&m);
 }
 
-void nrf24_msg_send_acc_temp_gyro_values(int16_t acc_x, int16_t acc_y, int16_t acc_z, int16_t temp, int16_t gyro_x, int16_t gyro_y, int16_t gyro_z) {
+void nrf24_msg_send_mpu9250_values(int16_t acc_x, int16_t acc_y, int16_t acc_z, int16_t temp, int16_t gyro_x, int16_t gyro_y, int16_t gyro_z) {
 	nrf24_msg_t m;
-	m.id = nRF24_MSG_ID_ACC_TEMP_GYRO_VALUES;
-	((int16_t *)(&m.data[0]))[0] = acc_x;
-	((int16_t *)(&m.data[0]))[1] = acc_y;
-	((int16_t *)(&m.data[0]))[2] = acc_z;
-	((int16_t *)(&m.data[0]))[3] = temp;
-	((int16_t *)(&m.data[0]))[4] = gyro_x;
-	((int16_t *)(&m.data[0]))[5] = gyro_y;
-	((int16_t *)(&m.data[0]))[6] = gyro_z;
-	m.len = 7 * sizeof(int16_t);
+	m.id = nRF24_MSG_ID_MPU9250_VALUES;
+	mpu9250_values_t *values = (mpu9250_values_t *)(&m.data.u8);
+
+	values->acc_x  = acc_x;
+	values->acc_y  = acc_y;
+	values->acc_z  = acc_z;
+	values->temp   = temp;
+	values->gyro_x = gyro_x;
+	values->gyro_y = gyro_y;
+	values->gyro_z = gyro_z;
+	m.len = (7*sizeof(int16_t));
+
 	nrf24_send_message(&m);
 }
 
+void nrf24_msg_send_angle_values(float angle, int16_t acc_x, int16_t acc_y, int16_t gyro_z) {
+	nrf24_msg_t m;
+	m.id = nRF24_MSG_ID_ANGLE_VALUES;
+	angle_values_t *values = (angle_values_t *)(&m.data.u8);
 
+	values->angle = angle;
+	values->acc_x  = acc_x;
+	values->acc_y  = acc_y;
+	values->gyro_z = gyro_z;
+	m.len = (1*sizeof(float)) + (3*sizeof(int16_t));
 
+	nrf24_send_message(&m);
+}
 
 
 
@@ -100,33 +114,54 @@ void nrf24_receive_packet(nrf24_msg_t *m) {
 	osMessageQueuePut(nrf24_msg_in_queue_handle, m, 0, 0);
 }
 
-
-
 static void nrf24_msg_in_task_cb(void *argument) {
 	nrf24_msg_t m;
-	uint16_t str_len = 0;
-	uint8_t new_line = '\n';
+	mpu9250_values_t *mpu9250_values;
+	angle_values_t *angle_values;
+	uint16_t str_len;
+	uint8_t new_line;
 
 	while(1) {
 		if(osMessageQueueGet(nrf24_msg_in_queue_handle, &m, 0, osWaitForever) == osOK) {
 			switch(m.id) {
 			// -----------------------------------------------------------------
-			case nRF24_MSG_ID_ACC_TEMP_GYRO_VALUES:
-				//m.len
+			case nRF24_MSG_ID_MPU9250_VALUES:
+				//m.len is unimportant
+				mpu9250_values = (mpu9250_values_t *)(&m.data.u8);
+
 				str_len = str_buf_clear(nrf24_out_str, NRF24_OUT_STR_SIZE);
-				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, ((int16_t *)&m.data[0])[0]);
+				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, mpu9250_values->acc_x);
 				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, ',');
-				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, ((int16_t *)&m.data[0])[1]);
+				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, mpu9250_values->acc_y);
 				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, ',');
-				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, ((int16_t *)&m.data[0])[2]);
+				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, mpu9250_values->acc_z);
 				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, ',');
-				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, ((int16_t *)&m.data[0])[3]);
+				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, mpu9250_values->temp);
 				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, ',');
-				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, ((int16_t *)&m.data[0])[4]);
+				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, mpu9250_values->gyro_x);
 				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, ',');
-				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, ((int16_t *)&m.data[0])[5]);
+				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, mpu9250_values->gyro_y);
 				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, ',');
-				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, ((int16_t *)&m.data[0])[6]);
+				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, mpu9250_values->gyro_z);
+				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, '\n');
+
+				uart_send_buffer((uint8_t *)nrf24_out_str, str_len);
+				break;
+
+			// -----------------------------------------------------------------
+			case nRF24_MSG_ID_ANGLE_VALUES:
+				//m.len is unimportant
+				angle_values = (angle_values_t *)(&m.data.u8);
+				float temp_float = angle_values->angle;
+
+				str_len = str_buf_clear(nrf24_out_str, NRF24_OUT_STR_SIZE);
+				str_len = str_buf_append_float(nrf24_out_str, NRF24_OUT_STR_SIZE, temp_float, 2);
+				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, ',');
+				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, angle_values->acc_x);
+				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, ',');
+				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, angle_values->acc_x);
+				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, ',');
+				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, angle_values->gyro_z);
 				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, '\n');
 
 				uart_send_buffer((uint8_t *)nrf24_out_str, str_len);
@@ -134,7 +169,7 @@ static void nrf24_msg_in_task_cb(void *argument) {
 
 			// -----------------------------------------------------------------
 			case nRF24_MSG_ID_STRING:
-				uart_send_buffer(m.data, m.len);
+				uart_send_buffer(m.data.u8, m.len);
 				new_line = '\n';
 				uart_send_buffer(&new_line, 1);
 				break;
