@@ -100,6 +100,8 @@ int main(void)
   uart_send_string(__FILE__);
   uart_send_string("\n+ compile date: ");
   uart_send_string(__DATE__);
+  uart_send_string(", ");
+  uart_send_string(__TIME__);
   uart_send_string("\nstart Listening for packets:\n");
   nrf24_init(nRF24_ROLE_CENTRAL);
   nrf24_open();

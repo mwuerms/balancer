@@ -98,6 +98,9 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
+  can_start();
+  can_send(0x01, "abcd", 4);
+
   sensor_init();
   sensor_start_continous();
 

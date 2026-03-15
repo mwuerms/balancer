@@ -159,7 +159,7 @@ static void nrf24_msg_in_task_cb(void *argument) {
 				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, ',');
 				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, angle_values->acc_x);
 				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, ',');
-				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, angle_values->acc_x);
+				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, angle_values->acc_y);
 				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, ',');
 				str_len = str_buf_append_int16(nrf24_out_str, NRF24_OUT_STR_SIZE, angle_values->gyro_z);
 				str_len = str_buf_append_char(nrf24_out_str, NRF24_OUT_STR_SIZE, '\n');
