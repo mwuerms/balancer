@@ -16,6 +16,7 @@
 #include "utils.h"
 
 #include "nrf24_msg.h"
+#include "can.h"
 
 // - FreeRTOS tasks ------------------------------------------------------------
 osThreadId_t sensor_task_handle = NULL;
@@ -70,9 +71,11 @@ static void sensor_task_cb(void *argument) {
 			mpu9250_get_gyro_xyz(gyro);
 			angle_deg = mpu9250_get_acc_xy_angle_deg();
 
-			//nrf24_msg_send_mpu9250_values(acc[0], acc[1], acc[2], temp, gyro[0], gyro[1], gyro[2]);
-			nrf24_msg_send_angle_values(angle_deg, acc[0], acc[1], gyro[2]);
+			nrf24_msg_send_mpu9250_values(acc[0], acc[1], acc[2], temp, gyro[0], gyro[1], gyro[2]);
+			//nrf24_msg_send_angle_values(angle_deg, acc[0], acc[1], gyro[2]);
 			sensor_cnt++;
+
+			can_hello_motor(0);
 		}
 	}
 }

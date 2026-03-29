@@ -99,7 +99,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   can_start();
-  can_send(0x01, "abcd", 4);
+  //can_hello_motor(MOTOR0);
 
   sensor_init();
   sensor_start_continous();

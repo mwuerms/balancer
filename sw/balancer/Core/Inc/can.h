@@ -42,7 +42,11 @@ void MX_CAN_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 void can_start(void);
-void can_send(uint16_t addr, uint8_t *send_data, uint8_t len);
+
+#define MOTOR0 (0)
+#define MOTOR1 (1)
+void can_hello_motor(uint8_t motor);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

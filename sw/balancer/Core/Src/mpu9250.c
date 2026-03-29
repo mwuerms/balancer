@@ -59,16 +59,14 @@ static inline uint16_t spi_transfer_buffer_blocking(uint8_t* buffer, uint16_t bu
 #define WRITE_CMD (0x00)
 
 /* MPU9250
-1g = 16384 (2^14)
+1g = 8192 (2^13)
 Accelerometer Umschlagsmessung Mittelwerte
-2026-03-14, Martin Egli
-
-
+2026-03-16, Martin Egli
  */
 static const float acc_1g = 8192.0f;
-static const float acc_meas_x_1g[] = {8547.375f, -7868.625f};
-static const float acc_meas_y_1g[] = {8196.5f, -8197.5f};
-static const float gyr_meas_z_0 = -266.373261985954f;
+static const float acc_meas_x_1g[] = {8536.9375f, -7873.0625f};
+static const float acc_meas_y_1g[] = {8188.5f, -8170.0f};
+static const float gyr_meas_z_0 = -82.34904f;
 
 typedef struct {
 	float gain, offset;
