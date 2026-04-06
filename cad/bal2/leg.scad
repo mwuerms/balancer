@@ -19,14 +19,14 @@ module elements(show_elements = 1, loc_res = 32) {
         translate([0, 0, -5.5])
         magnet_holder_8mm_6x5mm_magnet(1, loc_res = loc_res);
         
-        translate([0, 0, -10])
+        *translate([0, 0, -10])
         pcbMT6701();
         
         translate([17.8/2, 40, -3])
         g431b_esc1_pcb_model();
     }
 }
-//elements();
+elements();
 
 module leg1(show = 1, loc_res = 32) {
     difference() {
@@ -62,7 +62,7 @@ module leg1(show = 1, loc_res = 32) {
     }    
     elements(show_elements = show, loc_res = loc_res);
 }
-leg1();
+//leg1();
 
 // try as5601 position sensor with i2c + quadrature output
 /*rotate([0, 0, 45])

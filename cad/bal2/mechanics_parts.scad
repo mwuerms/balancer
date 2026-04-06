@@ -27,7 +27,7 @@ module lego_axis_cut(len = 10) {
         cube([1.4, 4.8, len]);
     }
 }
-lego_axis_cut();
+//lego_axis_cut();
 
 module bldc5010_m3cut_rotor(show = 1, len = 10, loc_res = 32) {
     if(show) {
@@ -72,6 +72,7 @@ module bldc5010_m3cut_stator(show = 1, len = 10, loc_res = 32) {
         }
     }
 }
+//bldc5010_m3cut_stator();
 
 module bldc5010_motor(show = 1, loc_res = 32) {
     if(show) {
@@ -120,6 +121,7 @@ module bldc5010_motor(show = 1, loc_res = 32) {
         cylinder(d = 2.5, h=20, $fn = loc_res);
     }
 }
+//bldc5010_motor();
 
 module bldc5010_magnet_holder_5mm_v1_0(loc_res = 32) {
     difference() {
