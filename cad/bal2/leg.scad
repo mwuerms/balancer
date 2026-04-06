@@ -8,6 +8,8 @@ use <mechanics_parts.scad>
 use <parts.scad>
 use <printparts.scad>
 use <screws.scad>
+use <g431b_esc1.scad>
+use <rotarysensors.scad>
 
 module elements(show_elements = 1, loc_res = 32) {
     if(show_elements) {
@@ -17,11 +19,13 @@ module elements(show_elements = 1, loc_res = 32) {
         translate([0, 0, -5.5])
         magnet_holder_8mm_6x5mm_magnet(1, loc_res = loc_res);
         
+        translate([0, 0, -10])
+        pcbMT6701();
+        
         translate([17.8/2, 40, -3])
         g431b_esc1_pcb_model();
     }
 }
-
 //elements();
 
 module leg1(show = 1, loc_res = 32) {
@@ -58,5 +62,10 @@ module leg1(show = 1, loc_res = 32) {
     }    
     elements(show_elements = show, loc_res = loc_res);
 }
-
 leg1();
+
+// try as5601 position sensor with i2c + quadrature output
+/*rotate([0, 0, 45])
+bldc5010_motor(0, loc_res = 32);
+translate([0, 0, -6])
+soic8();*/
