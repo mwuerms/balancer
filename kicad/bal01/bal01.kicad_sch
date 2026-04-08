@@ -2121,7 +2121,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "bal:H7_Pads_1.27mm"
+		(property "Footprint" "bal:H7_Pads_1.27mm-001"
 			(at 215.9 100.33 0)
 			(effects
 				(font
