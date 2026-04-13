@@ -2238,7 +2238,7 @@
 		(layer "Dwgs.User")
 		(uuid "06969708-0ed9-4ea9-9dfb-b7e3b2f0d8d2")
 		(pts
-			(xy 120.2 105.7) (xy 147.2 105.8)
+			(xy 120.2 105.7) (xy 151 105.8)
 		)
 		(height 8.1)
 		(orientation 0)
@@ -2258,8 +2258,8 @@
 			(extension_offset 0.5)
 			(keep_text_aligned yes)
 		)
-		(gr_text "27.0mm"
-			(at 133.7 112.65 0)
+		(gr_text "30.8mm"
+			(at 135.6 112.65 0)
 			(layer "Dwgs.User")
 			(uuid "06969708-0ed9-4ea9-9dfb-b7e3b2f0d8d2")
 			(effects
@@ -2275,9 +2275,9 @@
 		(layer "Dwgs.User")
 		(uuid "45a00f55-e5f1-4b5d-a47e-f7a26355e590")
 		(pts
-			(xy 143.5 109.8) (xy 143.5 90.2)
+			(xy 147 109.8) (xy 147 90.2)
 		)
-		(height 7.2)
+		(height 10)
 		(orientation 1)
 		(format
 			(prefix "")
@@ -2296,7 +2296,7 @@
 			(keep_text_aligned yes)
 		)
 		(gr_text "19.6mm"
-			(at 149.55 100 90)
+			(at 155.85 100 90)
 			(layer "Dwgs.User")
 			(uuid "45a00f55-e5f1-4b5d-a47e-f7a26355e590")
 			(effects
