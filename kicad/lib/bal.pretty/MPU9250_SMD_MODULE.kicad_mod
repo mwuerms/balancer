@@ -62,7 +62,7 @@
 	)
 	(fp_line
 		(start -1.27 24.13)
-		(end 15.24 24.13)
+		(end 14.478 24.13)
 		(stroke
 			(width 0.1)
 			(type default)
@@ -71,8 +71,8 @@
 		(uuid "2bea8ec6-d3a2-4ded-ae3f-e60dd4fba83c")
 	)
 	(fp_line
-		(start 15.24 -1.27)
-		(end -1.27 -1.27)
+		(start 14.478 -1.27)
+		(end -0.33 -1.27)
 		(stroke
 			(width 0.1)
 			(type default)
@@ -81,14 +81,36 @@
 		(uuid "6355564a-68ba-451f-a022-77d013037fde")
 	)
 	(fp_line
-		(start 15.24 24.13)
-		(end 15.24 -1.27)
+		(start 14.478 24.13)
+		(end 14.478 -1.27)
 		(stroke
 			(width 0.1)
 			(type default)
 		)
 		(layer "F.SilkS")
 		(uuid "0b24f768-8c86-44e5-8c15-b1d49603dd87")
+	)
+	(fp_circle
+		(center 11.4 1.8)
+		(end 13 1.8)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "89d596e1-49d1-4159-b18f-1b3a8aeb5507")
+	)
+	(fp_circle
+		(center 11.4 21.7)
+		(end 13 21.7)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "44b95c8a-6836-4884-91b9-b9013ac055cd")
 	)
 	(pad "1" thru_hole roundrect
 		(at 0 0)
